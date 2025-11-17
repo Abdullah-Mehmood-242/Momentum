@@ -13,7 +13,7 @@ The UI/UX follows a structured design system created in Figma for consistency th
 
 ## 🎨 Figma Design
 
-[![Figma](https://upload.wikimedia.org/wikipedia/commons/3/33/Figma-logo.svg)](https://www.figma.com/design/9YMxAjBNmIlbKMCrB7Nap7/MAD-Project-Design?node-id=0-1&t=ontwnf0GgrItWmOw-1)({:height="30" width="30"})
+<img src="https://upload.wikimedia.org/wikipedia/commons/3/33/Figma-logo.svg" alt="Figma Logo" height="30">
 
 **Figma Project:**
 [https://www.figma.com/design/9YMxAjBNmIlbKMCrB7Nap7/MAD-Project-Design?node-id=0-1&t=ontwnf0GgrItWmOw-1](https://www.figma.com/design/9YMxAjBNmIlbKMCrB7Nap7/MAD-Project-Design?node-id=0-1&t=ontwnf0GgrItWmOw-1)

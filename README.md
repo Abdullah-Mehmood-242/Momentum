@@ -1,73 +1,85 @@
-# Momentum  
-A modern fitness tracking application built with Flutter.
+# Momentum
 
-## Overview  
-Momentum is designed as a clean and scalable fitness app with a focus on intuitive UI and efficient user interaction.  
-The project starts with a solid Flutter foundation and will expand following the Figma design system linked below.
+A modern, minimal fitness tracking application built with Flutter.
 
 ---
 
-## 🎨 Figma Design  
-All UI/UX screens for Momentum are designed here:
+## Overview
 
-👉 **https://www.figma.com/design/9YMxAjBNmIlbKMCrB7Nap7/MAD-Project-Design?node-id=0-1&t=ontwnf0GgrItWmOw-1**
-
----
-
-## 🚀 Planned Features  
-- User onboarding  
-- Daily fitness activity tracking  
-- Workout logging  
-- Graph-based progress visualization  
-- Responsive UI based on Figma  
-- Local storage  
-- Notifications & reminders  
+Momentum is a clean and scalable fitness app focused on intuitive navigation, simple interaction, and efficient performance.
+The UI/UX follows a structured design system created in Figma for consistency throughout the app.
 
 ---
 
-## 📁 Project Structure  
-lib/
-main.dart
-screens/
-widgets/
-models/
-services/
+## 🎨 Figma Design
 
-yaml
-Copy code
+[![Figma](https://upload.wikimedia.org/wikipedia/commons/3/33/Figma-logo.svg)](https://www.figma.com/design/9YMxAjBNmIlbKMCrB7Nap7/MAD-Project-Design?node-id=0-1&t=ontwnf0GgrItWmOw-1)
 
-This structure will grow as development continues.
+**Figma Project:**
+[https://www.figma.com/design/9YMxAjBNmIlbKMCrB7Nap7/MAD-Project-Design?node-id=0-1&t=ontwnf0GgrItWmOw-1](https://www.figma.com/design/9YMxAjBNmIlbKMCrB7Nap7/MAD-Project-Design?node-id=0-1&t=ontwnf0GgrItWmOw-1)
 
 ---
 
-## 🛠 Getting Started  
+## 🚀 Planned Features
 
-### 1. Install Flutter  
-Make sure Flutter is installed:
+* Onboarding flow
+* Daily activity tracking
+* Workout logging
+* Progress charts & analytics
+* Clean, responsive UI
+* Local data storage
+* Notifications & reminders
+
+---
+
+## 📁 Project Structure
+
+```
+Momentum/
+├── android/
+├── ios/
+├── lib/
+│   ├── main.dart
+│   ├── screens/
+│   ├── widgets/
+│   ├── models/
+│   └── services/
+├── test/
+├── pubspec.yaml
+└── README.md
+```
+
+> This is the initial structure; it will expand as development continues.
+
+---
+
+## 🛠️ Getting Started
+
+Open a terminal in the project root (`Momentum/`) and run the following commands:
+
+```bash
+# 1. Check Flutter installation
 flutter doctor
 
-shell
-Copy code
-
-### 2. Install dependencies  
+# 2. Install project dependencies
 flutter pub get
 
-bash
-Copy code
-
-### 3. Run the app  
+# 3. Run the app on your connected device or simulator
 flutter run
+```
 
-Copy code
-
----
-
-## 🧰 Technologies Used  
-- Flutter  
-- Dart  
-- Figma  
+> Copy these commands directly to your terminal.
 
 ---
 
-## 👤 Author  
-**Abdullah Mehmood**  
+## 🧰 Technologies Used
+
+* Flutter
+* Dart
+* Figma (UI/UX Design)
+
+---
+
+## 👤 Author
+
+**Abdullah Mehmood**

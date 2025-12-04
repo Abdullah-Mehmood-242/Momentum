@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:momentum/core/state/app_state.dart';
 import 'package:momentum/features/auth/presentation/screens/welcome_screen.dart';
+import 'package:momentum/features/home/presentation/screens/dashboard_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -13,11 +15,23 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    Timer(
-      const Duration(seconds: 3),
-      () => Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const WelcomeScreen()),
+    _navigateAfterDelay();
+  }
+
+  Future<void> _navigateAfterDelay() async {
+    await Future.delayed(const Duration(seconds: 3));
+    
+    if (!mounted) return;
+    
+    final appState = AppStateProvider.of(context);
+    
+    // Navigate based on login status
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => appState.isLoggedIn 
+            ? const DashboardScreen() 
+            : const WelcomeScreen(),
       ),
     );
   }

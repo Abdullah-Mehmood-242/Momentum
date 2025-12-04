@@ -1,21 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:momentum/core/state/app_state.dart';
 import 'package:momentum/features/profile/presentation/screens/edit_profile_screen.dart';
 import 'package:momentum/features/profile/presentation/screens/settings_screen.dart';
+import 'package:momentum/features/auth/presentation/screens/welcome_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final appState = AppStateProvider.of(context);
+    final userName = appState.userName;
+    final userEmail = appState.userEmail;
+    final localUser = appState.localUserData;
+
     return Scaffold(
       backgroundColor: const Color(0xFF201A3F),
       appBar: AppBar(
         backgroundColor: Colors.grey[800],
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+        automaticallyImplyLeading: false,
         title: const Text('Profile', style: TextStyle(color: Colors.white)),
         actions: [
           IconButton(
@@ -34,30 +38,51 @@ class ProfileScreen extends StatelessWidget {
           padding: const EdgeInsets.all(24.0),
           child: Column(
             children: [
-              const CircleAvatar(
+              CircleAvatar(
                 radius: 60,
-                // backgroundImage: AssetImage('assets/images/profile_pic.png'),
+                backgroundColor: const Color(0xFF4A3D7E),
+                child: Text(
+                  userName.isNotEmpty ? userName.substring(0, 1).toUpperCase() : 'G',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 48,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
               const SizedBox(height: 20),
-              const Text(
-                'Abdullah Mehmood',
-                style: TextStyle(
+              Text(
+                userName.isNotEmpty ? userName : 'Guest User',
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
-                'abdullahmehmood242@gmail.com',
-                style: TextStyle(color: Colors.white54, fontSize: 16),
+              Text(
+                userEmail.isNotEmpty ? userEmail : 'guest@momentum.app',
+                style: const TextStyle(color: Colors.white54, fontSize: 16),
               ),
               const SizedBox(height: 30),
-              _buildProfileDetailCard(title: 'Weight', value: '145 lbs'),
+              _buildProfileDetailCard(
+                title: 'Weight',
+                value: localUser?.weight != null 
+                    ? '${localUser!.weight!.toStringAsFixed(0)} ${localUser.useMetricUnits ? 'kg' : 'lbs'}' 
+                    : 'Not set',
+              ),
               const SizedBox(height: 16),
-              _buildProfileDetailCard(title: 'Height', value: '5\'6"'),
+              _buildProfileDetailCard(
+                title: 'Height',
+                value: localUser?.height != null 
+                    ? _formatHeight(localUser!.height!, localUser.useMetricUnits) 
+                    : 'Not set',
+              ),
               const SizedBox(height: 16),
-              _buildProfileDetailCard(title: 'Age', value: '30'),
+              _buildProfileDetailCard(
+                title: 'Age',
+                value: localUser?.age != null ? '${localUser!.age}' : 'Not set',
+              ),
               const SizedBox(height: 40),
               SizedBox(
                 width: double.infinity,
@@ -76,7 +101,7 @@ class ProfileScreen extends StatelessWidget {
                     ),
                   ),
                   child: const Text(
-                    'View/Edit My Goals',
+                    'Edit Profile',
                     style: TextStyle(
                       color: Color(0xFF201A3F),
                       fontSize: 18,
@@ -87,7 +112,7 @@ class ProfileScreen extends StatelessWidget {
               ),
               const SizedBox(height: 20),
               TextButton(
-                onPressed: () {},
+                onPressed: () => _handleLogout(context),
                 child: const Text(
                   'Logout',
                   style: TextStyle(color: Colors.red, fontSize: 16),
@@ -96,6 +121,55 @@ class ProfileScreen extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  String _formatHeight(double inches, bool useMetric) {
+    if (useMetric) {
+      final cm = inches * 2.54;
+      return '${cm.toStringAsFixed(0)} cm';
+    } else {
+      final feet = (inches / 12).floor();
+      final remainingInches = (inches % 12).round();
+      return "$feet'$remainingInches\"";
+    }
+  }
+
+  void _handleLogout(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF4A3D7E),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          'Logout',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: const Text(
+          'Are you sure you want to logout?',
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel', style: TextStyle(color: Colors.white)),
+          ),
+          TextButton(
+            onPressed: () async {
+              final appState = AppStateProvider.of(context);
+              await appState.logout();
+              if (context.mounted) {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => const WelcomeScreen()),
+                  (route) => false,
+                );
+              }
+            },
+            child: const Text('Logout', style: TextStyle(color: Colors.red)),
+          ),
+        ],
       ),
     );
   }
@@ -111,7 +185,14 @@ class ProfileScreen extends StatelessWidget {
         children: [
           Text(title, style: const TextStyle(color: Colors.white, fontSize: 16)),
           const Spacer(),
-          Text(value, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+          Text(
+            value,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ],
       ),
     );

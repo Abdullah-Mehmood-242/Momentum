@@ -33,10 +33,7 @@ class DefaultFirebaseOptions {
           'you can reconfigure this by running the FlutterFire CLI again.',
         );
       case TargetPlatform.windows:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for windows - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return windows;
       case TargetPlatform.linux:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for linux - '
@@ -65,4 +62,15 @@ class DefaultFirebaseOptions {
     storageBucket: 'momentum-9f21a.firebasestorage.app',
     iosBundleId: 'com.sap70169004.momentum',
   );
+
+  static const FirebaseOptions windows = FirebaseOptions(
+    apiKey: 'AIzaSyBlZYpMZ_ivzg4F8XBtY6OsJ7g3v3DZZQQ',
+    appId: '1:975332429096:web:7fbd19691fee807d1b141d',
+    messagingSenderId: '975332429096',
+    projectId: 'momentum-9f21a',
+    authDomain: 'momentum-9f21a.firebaseapp.com',
+    storageBucket: 'momentum-9f21a.firebasestorage.app',
+    measurementId: 'G-NGBX6SFX5R',
+  );
+
 }

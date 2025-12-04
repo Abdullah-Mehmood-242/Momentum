@@ -1,24 +1,50 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:momentum/firebase_options.dart';
+import 'package:momentum/core/state/app_state.dart';
+import 'package:momentum/core/services/storage_service.dart';
+import 'package:momentum/core/services/auth_service.dart';
 import 'package:momentum/features/splash/presentation/screens/splash_screen.dart';
 
-void main() {
-  runApp(const MyApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize Firebase
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  
+  // Initialize shared preferences
+  final prefs = await SharedPreferences.getInstance();
+  final storageService = StorageService(prefs);
+  final authService = AuthService();
+  final appState = AppState(storageService, authService);
+  
+  // Initialize app state
+  await appState.initialize();
+  
+  runApp(MyApp(appState: appState));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final AppState appState;
+  
+  const MyApp({super.key, required this.appState});
 
   @override
   Widget build(BuildContext context) {
-
-    return MaterialApp(
-
-      debugShowCheckedModeBanner: false,
-      title: 'Momentum',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+    return AppStateProvider(
+      appState: appState,
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: 'Momentum',
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+          fontFamily: 'Montserrat Alternates',
+        ),
+        home: const SplashScreen(),
       ),
-      home: const SplashScreen(),
     );
   }
 }

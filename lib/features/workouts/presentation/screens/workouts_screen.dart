@@ -1,24 +1,43 @@
 import 'package:flutter/material.dart';
+import 'package:momentum/core/state/app_state.dart';
+import 'package:momentum/core/models/models.dart';
+import 'package:momentum/features/workouts/presentation/screens/workout_detail_screen.dart';
+import 'package:momentum/features/profile/presentation/screens/settings_screen.dart';
 
-class WorkoutsScreen extends StatelessWidget {
+class WorkoutsScreen extends StatefulWidget {
   const WorkoutsScreen({super.key});
 
   @override
+  State<WorkoutsScreen> createState() => _WorkoutsScreenState();
+}
+
+class _WorkoutsScreenState extends State<WorkoutsScreen> {
+  String _searchQuery = '';
+
+  @override
   Widget build(BuildContext context) {
+    final appState = AppStateProvider.of(context);
+    final allWorkouts = appState.workouts;
+    final filteredWorkouts = _searchQuery.isEmpty
+        ? allWorkouts
+        : appState.searchWorkouts(_searchQuery);
+
     return Scaffold(
       backgroundColor: const Color(0xFF201A3F),
       appBar: AppBar(
         backgroundColor: Colors.grey[800],
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () {},
-        ),
+        automaticallyImplyLeading: false,
         title: const Text('Workout', style: TextStyle(color: Colors.white)),
         actions: [
           IconButton(
             icon: const Icon(Icons.settings, color: Colors.white),
-            onPressed: () {},
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const SettingsScreen()),
+              );
+            },
           ),
         ],
       ),
@@ -30,16 +49,31 @@ class WorkoutsScreen extends StatelessWidget {
             _buildSearchBar(),
             const SizedBox(height: 20),
             Expanded(
-              child: ListView(
-                children: const [
-                  WorkoutCard(title: 'Warm Up', duration: '30 min', level: 'Basic', image: 'assets/images/warm_up.png'),
-                  SizedBox(height: 16),
-                  WorkoutCard(title: 'Full Body', duration: '3 hrs', level: 'Advanced', image: 'assets/images/full_body.png'),
-                  SizedBox(height: 16),
-                  WorkoutCard(title: 'Yoga Flow', duration: '1 hrs', level: 'Intermediate', image: 'assets/images/yoga_flow.png'),
-                  SizedBox(height: 16),
-                ],
-              ),
+              child: filteredWorkouts.isEmpty
+                  ? const Center(
+                      child: Text(
+                        'No workouts found',
+                        style: TextStyle(color: Colors.white54, fontSize: 16),
+                      ),
+                    )
+                  : ListView.separated(
+                      itemCount: filteredWorkouts.length,
+                      separatorBuilder: (context, index) => const SizedBox(height: 16),
+                      itemBuilder: (context, index) {
+                        final workout = filteredWorkouts[index];
+                        return WorkoutCard(
+                          workout: workout,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => WorkoutDetailScreen(workout: workout),
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
             ),
           ],
         ),
@@ -49,11 +83,13 @@ class WorkoutsScreen extends StatelessWidget {
 
   Widget _buildSearchBar() {
     return TextField(
+      onChanged: (value) {
+        setState(() => _searchQuery = value);
+      },
       decoration: InputDecoration(
         hintText: 'Search all Workouts',
         hintStyle: const TextStyle(color: Colors.white54),
         prefixIcon: const Icon(Icons.search, color: Colors.white54),
-        suffixIcon: const Icon(Icons.calendar_today, color: Colors.white54),
         filled: true,
         fillColor: const Color(0xFF4A3D7E),
         border: OutlineInputBorder(
@@ -67,34 +103,101 @@ class WorkoutsScreen extends StatelessWidget {
 }
 
 class WorkoutCard extends StatelessWidget {
-  final String title, duration, level, image;
+  final WorkoutModel workout;
+  final VoidCallback? onTap;
 
-  const WorkoutCard({super.key, required this.title, required this.duration, required this.level, required this.image});
+  const WorkoutCard({
+    super.key,
+    required this.workout,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: Stack(
-        children: [
-          // Image.asset(image, fit: BoxFit.cover, height: 180, width: double.infinity, color: Colors.black.withOpacity(0.3), colorBlendMode: BlendMode.darken),
-          Container(height: 180, decoration: BoxDecoration(color: Colors.black.withOpacity(0.3))),
-          Positioned(
-            bottom: 20,
-            left: 20,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 5),
-                Text(duration, style: const TextStyle(color: Colors.white, fontSize: 16)),
-                const SizedBox(height: 5),
-                Text(level, style: const TextStyle(color: Colors.white, fontSize: 16)),
-              ],
+    return GestureDetector(
+      onTap: onTap,
+      child: Card(
+        clipBehavior: Clip.antiAlias,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Stack(
+          children: [
+            Image.asset(
+              workout.image,
+              fit: BoxFit.cover,
+              height: 180,
+              width: double.infinity,
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  height: 180,
+                  color: const Color(0xFF4A3D7E),
+                  child: const Center(
+                    child: Icon(
+                      Icons.fitness_center,
+                      color: Colors.white54,
+                      size: 50,
+                    ),
+                  ),
+                );
+              },
             ),
-          ),
-        ],
+            Container(
+              height: 180,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    Colors.black.withOpacity(0.7),
+                  ],
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: 20,
+              left: 20,
+              right: 20,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        workout.title,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        '${workout.duration} • ${workout.level}',
+                        style: const TextStyle(color: Colors.white70, fontSize: 14),
+                      ),
+                    ],
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE8FF78),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      '${workout.exercises.length} exercises',
+                      style: const TextStyle(
+                        color: Color(0xFF201A3F),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

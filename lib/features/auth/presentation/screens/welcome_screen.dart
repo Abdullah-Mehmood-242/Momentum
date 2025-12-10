@@ -16,7 +16,7 @@ class WelcomeScreen extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Spacer(flex: 2),
-            Image.asset('assets/images/logo.png'),
+            Image.asset('assets/images/logo.png', height: 120),
             const SizedBox(height: 50),
             const Text(
               'Start your',

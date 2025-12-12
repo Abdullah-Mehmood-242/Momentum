@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:momentum/core/utils/page_transitions.dart';
 import 'package:momentum/features/auth/presentation/screens/password_changed_screen.dart';
 
 class CreateNewPasswordScreen extends StatelessWidget {
@@ -76,7 +77,7 @@ class CreateNewPasswordScreen extends StatelessWidget {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const PasswordChangedScreen()),
+                    ScalePageRoute(page: const PasswordChangedScreen()),
                   );
                 },
                 style: ElevatedButton.styleFrom(

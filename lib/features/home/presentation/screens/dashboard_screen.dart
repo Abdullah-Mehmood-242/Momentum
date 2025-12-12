@@ -22,41 +22,77 @@ class _DashboardScreenState extends State<DashboardScreen> {
   ];
 
   void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
+    if (index != _selectedIndex) {
+      setState(() {
+        _selectedIndex = index;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _widgetOptions.elementAt(_selectedIndex),
-      bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.fitness_center),
-            label: 'Workouts',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.show_chart),
-            label: 'Progress',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-        ],
-        currentIndex: _selectedIndex,
-        selectedItemColor: Colors.white,
-        unselectedItemColor: Colors.white54,
-        onTap: _onItemTapped,
-        backgroundColor: const Color(0xFF4A3D7E),
-        type: BottomNavigationBarType.fixed,
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 300),
+        transitionBuilder: (Widget child, Animation<double> animation) {
+          return FadeTransition(
+            opacity: animation,
+            child: child,
+          );
+        },
+        child: KeyedSubtree(
+          key: ValueKey<int>(_selectedIndex),
+          child: _widgetOptions.elementAt(_selectedIndex),
+        ),
       ),
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 10,
+              offset: const Offset(0, -2),
+            ),
+          ],
+        ),
+        child: BottomNavigationBar(
+          items: <BottomNavigationBarItem>[
+            _buildNavItem(Icons.home_outlined, Icons.home, 'Home', 0),
+            _buildNavItem(Icons.fitness_center_outlined, Icons.fitness_center, 'Workouts', 1),
+            _buildNavItem(Icons.show_chart_outlined, Icons.show_chart, 'Progress', 2),
+            _buildNavItem(Icons.person_outline, Icons.person, 'Profile', 3),
+          ],
+          currentIndex: _selectedIndex,
+          selectedItemColor: const Color(0xFFE8FF78),
+          unselectedItemColor: Colors.white54,
+          onTap: _onItemTapped,
+          backgroundColor: const Color(0xFF4A3D7E),
+          type: BottomNavigationBarType.fixed,
+          selectedFontSize: 12,
+          unselectedFontSize: 12,
+        ),
+      ),
+    );
+  }
+
+  BottomNavigationBarItem _buildNavItem(
+    IconData unselectedIcon,
+    IconData selectedIcon,
+    String label,
+    int index,
+  ) {
+    final isSelected = _selectedIndex == index;
+    return BottomNavigationBarItem(
+      icon: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: EdgeInsets.all(isSelected ? 8 : 4),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFFE8FF78).withOpacity(0.2) : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Icon(isSelected ? selectedIcon : unselectedIcon),
+      ),
+      label: label,
     );
   }
 }

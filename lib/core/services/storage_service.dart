@@ -74,9 +74,13 @@ class StorageService {
     final users = getRegisteredUsers();
     final index = users.indexWhere((u) => u.id == updatedUser.id);
     
-    if (index == -1) return false;
+    if (index == -1) {
+      // User not in registered list, add them
+      users.add(updatedUser);
+    } else {
+      users[index] = updatedUser;
+    }
     
-    users[index] = updatedUser;
     final jsonList = users.map((u) => u.toJson()).toList();
     
     // Also update current user if it's the same user
@@ -170,8 +174,62 @@ class StorageService {
     return await _prefs.setBool(_notificationsEnabledKey, enabled);
   }
 
+  // ==================== Onboarding ====================
+
+  static const String _hasSeenOnboardingKey = 'has_seen_onboarding';
+
+  /// Check if user has seen onboarding
+  bool hasSeenOnboarding() {
+    return _prefs.getBool(_hasSeenOnboardingKey) ?? false;
+  }
+
+  /// Mark onboarding as seen
+  Future<bool> setOnboardingSeen() async {
+    return await _prefs.setBool(_hasSeenOnboardingKey, true);
+  }
+
+  // ==================== Goals ====================
+
+  static const String _goalsKey = 'daily_goals';
+
+  /// Save daily goals
+  Future<bool> saveGoals(Map<String, dynamic> goals) async {
+    return await _prefs.setString(_goalsKey, jsonEncode(goals));
+  }
+
+  /// Get daily goals
+  Map<String, dynamic>? getGoals() {
+    final json = _prefs.getString(_goalsKey);
+    if (json == null) return null;
+    return jsonDecode(json);
+  }
+
+  // ==================== Workout History ====================
+
+  static const String _workoutHistoryKey = 'workout_history';
+
+  /// Save workout history
+  Future<bool> saveWorkoutHistory(List<Map<String, dynamic>> history) async {
+    return await _prefs.setString(_workoutHistoryKey, jsonEncode(history));
+  }
+
+  /// Get workout history
+  List<Map<String, dynamic>> getWorkoutHistory() {
+    final json = _prefs.getString(_workoutHistoryKey);
+    if (json == null) return [];
+    
+    final List<dynamic> jsonList = jsonDecode(json);
+    return jsonList.cast<Map<String, dynamic>>();
+  }
+
+  /// Clear workout history
+  Future<bool> clearWorkoutHistory() async {
+    return await _prefs.remove(_workoutHistoryKey);
+  }
+
   /// Clear all data (for testing/reset)
   Future<void> clearAll() async {
     await _prefs.clear();
   }
 }
+

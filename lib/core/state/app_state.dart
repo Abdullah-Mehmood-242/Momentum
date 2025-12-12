@@ -1,21 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/models.dart';
+import '../models/goals_model.dart';
+import '../models/workout_history_model.dart';
 import '../services/storage_service.dart';
 import '../services/auth_service.dart';
+import '../services/firestore_service.dart';
 import '../data/workout_data.dart';
 
 /// Application state management using InheritedWidget pattern
 class AppState extends ChangeNotifier {
   final StorageService _storage;
   final AuthService _authService;
+  final FirestoreService _firestoreService = FirestoreService();
 
   UserModel? _localUserData;
   List<WorkoutModel> _workouts = [];
   List<DailyProgressModel> _progressHistory = [];
   List<PersonalBest> _personalBests = [];
+  List<WorkoutHistoryEntry> _workoutHistory = [];
+  DailyGoals? _currentGoals;
   bool _notificationsEnabled = true;
   bool _isInitialized = false;
+  bool _hasSeenOnboarding = false;
+  bool _isLoading = false;
+  String? _loadingMessage;
 
   AppState(this._storage, this._authService);
 
@@ -41,8 +50,13 @@ class AppState extends ChangeNotifier {
   List<WorkoutModel> get workouts => _workouts;
   List<DailyProgressModel> get progressHistory => _progressHistory;
   List<PersonalBest> get personalBests => _personalBests;
+  List<WorkoutHistoryEntry> get workoutHistory => _workoutHistory;
+  DailyGoals? get currentGoals => _currentGoals;
   bool get notificationsEnabled => _notificationsEnabled;
   bool get isInitialized => _isInitialized;
+  bool get hasSeenOnboarding => _hasSeenOnboarding;
+  bool get isLoading => _isLoading;
+  String? get loadingMessage => _loadingMessage;
 
   DailyProgressModel get todayProgress {
     final today = DateTime.now();
@@ -56,9 +70,9 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  /// Calculate activity percentage for today (based on 60 min goal)
+  /// Calculate activity percentage for today (based on user's goal or default 60 min)
   double get todayActivityPercent {
-    const goalMinutes = 60;
+    final goalMinutes = _currentGoals?.targetActiveMinutes ?? 60;
     return (todayProgress.activeMinutes / goalMinutes).clamp(0.0, 1.0);
   }
 
@@ -67,6 +81,9 @@ class AppState extends ChangeNotifier {
   /// Initialize app state from storage
   Future<void> initialize() async {
     if (_isInitialized) return;
+
+    // Load onboarding status
+    _hasSeenOnboarding = _storage.hasSeenOnboarding();
 
     // Load local user data from storage
     _localUserData = _storage.getCurrentUser();
@@ -89,10 +106,36 @@ class AppState extends ChangeNotifier {
       await _storage.savePersonalBests(_personalBests);
     }
 
+    // Load goals
+    final goalsJson = _storage.getGoals();
+    if (goalsJson != null) {
+      _currentGoals = DailyGoals.fromJson(goalsJson);
+    } else {
+      _currentGoals = DailyGoals.defaults();
+    }
+
+    // Load workout history
+    final historyJson = _storage.getWorkoutHistory();
+    _workoutHistory = historyJson.map((e) => WorkoutHistoryEntry.fromJson(e)).toList();
+
     // Load settings
     _notificationsEnabled = _storage.getNotificationsEnabled();
 
     _isInitialized = true;
+    notifyListeners();
+  }
+
+  /// Set loading state
+  void setLoading(bool loading, [String? message]) {
+    _isLoading = loading;
+    _loadingMessage = message;
+    notifyListeners();
+  }
+
+  /// Mark onboarding as seen
+  Future<void> setOnboardingSeen() async {
+    _hasSeenOnboarding = true;
+    await _storage.setOnboardingSeen();
     notifyListeners();
   }
 
@@ -121,6 +164,10 @@ class AppState extends ChangeNotifier {
       );
       await _storage.saveCurrentUser(_localUserData!);
       await _storage.registerUser(_localUserData!);
+      
+      // Sync initial user data to Firestore
+      await _firestoreService.syncUserData(_localUserData!);
+      
       notifyListeners();
     }
 
@@ -150,6 +197,10 @@ class AppState extends ChangeNotifier {
         );
         await _storage.saveCurrentUser(_localUserData!);
       }
+      
+      // Fetch data from Firestore and merge with local
+      await _syncDataFromCloud();
+      
       notifyListeners();
     }
 
@@ -186,25 +237,43 @@ class AppState extends ChangeNotifier {
       await _authService.updateProfile(displayName: name);
     }
 
-    // Update local data
-    if (_localUserData != null) {
-      _localUserData = _localUserData!.copyWith(
-        name: name,
-        email: email,
-        weight: weight,
-        height: height,
-        age: age,
-        dateOfBirth: dateOfBirth,
-        useMetricUnits: useMetricUnits,
+    // Create local user data if it doesn't exist (e.g., guest user)
+    if (_localUserData == null) {
+      final userId = firebaseUser?.uid ?? DateTime.now().millisecondsSinceEpoch.toString();
+      _localUserData = UserModel(
+        id: userId,
+        username: name ?? firebaseUser?.displayName ?? 'Guest',
+        email: email ?? firebaseUser?.email ?? '',
+        password: '',
+        name: name ?? firebaseUser?.displayName ?? '',
       );
-
-      final success = await _storage.updateUser(_localUserData!);
-      if (success) {
-        notifyListeners();
-      }
-      return success;
     }
-    return false;
+
+    // Update local data
+    _localUserData = _localUserData!.copyWith(
+      name: name,
+      email: email,
+      weight: weight,
+      height: height,
+      age: age,
+      dateOfBirth: dateOfBirth,
+      useMetricUnits: useMetricUnits,
+    );
+
+    // Save current user first (this always works)
+    await _storage.saveCurrentUser(_localUserData!);
+    
+    // Then update in registered users list
+    final success = await _storage.updateUser(_localUserData!);
+    
+    if (success) {
+      // Sync profile changes to cloud
+      if (_authService.isLoggedIn) {
+        await _firestoreService.syncUserData(_localUserData!);
+      }
+      notifyListeners();
+    }
+    return success;
   }
 
   // ==================== Workout Methods ====================
@@ -256,6 +325,12 @@ class AppState extends ChangeNotifier {
 
     // Save to storage
     await _storage.saveProgressData(_progressHistory);
+    
+    // Sync today's progress to cloud
+    if (_authService.isLoggedIn) {
+      await _firestoreService.syncDayProgress(progress);
+    }
+    
     notifyListeners();
   }
 
@@ -310,6 +385,203 @@ class AppState extends ChangeNotifier {
         .where((p) => p.date.year == now.year && p.date.month == now.month)
         .fold(0, (sum, p) => sum + p.activeMinutes);
     return Duration(minutes: totalMinutes);
+  }
+
+  // ==================== Goals Methods ====================
+
+  /// Update daily goals
+  Future<void> updateGoals(DailyGoals goals) async {
+    _currentGoals = goals;
+    await _storage.saveGoals(goals.toJson());
+    
+    // Sync to cloud if authenticated
+    if (_authService.isLoggedIn) {
+      await _firestoreService.syncGoals(goals);
+    }
+    
+    notifyListeners();
+  }
+
+  // ==================== Workout History Methods ====================
+
+  /// Add workout to history
+  Future<void> addWorkoutToHistory(WorkoutHistoryEntry entry) async {
+    _workoutHistory.insert(0, entry);
+    await _storage.saveWorkoutHistory(
+      _workoutHistory.map((e) => e.toJson()).toList(),
+    );
+    
+    // Sync to cloud if authenticated
+    if (_authService.isLoggedIn) {
+      await _firestoreService.addWorkoutToHistory(entry);
+    }
+    
+    notifyListeners();
+  }
+
+  /// Clear workout history
+  Future<void> clearWorkoutHistory() async {
+    _workoutHistory.clear();
+    await _storage.clearWorkoutHistory();
+    
+    // Sync to cloud if authenticated
+    if (_authService.isLoggedIn) {
+      await _firestoreService.clearWorkoutHistory();
+    }
+    
+    notifyListeners();
+  }
+
+  // ==================== Profile Picture Methods ====================
+
+  /// Update profile picture path
+  Future<bool> updateProfilePicture(String? imagePath) async {
+    // Create local user data if it doesn't exist
+    if (_localUserData == null) {
+      final userId = firebaseUser?.uid ?? DateTime.now().millisecondsSinceEpoch.toString();
+      _localUserData = UserModel(
+        id: userId,
+        username: firebaseUser?.displayName ?? 'Guest',
+        email: firebaseUser?.email ?? '',
+        password: '',
+        name: firebaseUser?.displayName ?? '',
+      );
+    }
+    
+    _localUserData = _localUserData!.copyWith(profileImagePath: imagePath);
+    
+    // Save current user first
+    await _storage.saveCurrentUser(_localUserData!);
+    
+    // Then update in registered users list
+    final success = await _storage.updateUser(_localUserData!);
+    if (success) {
+      notifyListeners();
+    }
+    return success;
+  }
+
+  // ==================== Cloud Sync Methods ====================
+
+  /// Private helper to sync data from cloud on login
+  Future<void> _syncDataFromCloud() async {
+    if (!_authService.isLoggedIn) return;
+    
+    try {
+      final results = await _firestoreService.fullSync();
+      
+      if (results['success'] == true) {
+        // Update user data from cloud if available
+        if (results['userData'] != null) {
+          _localUserData = results['userData'] as UserModel;
+          await _storage.saveCurrentUser(_localUserData!);
+        }
+        
+        // Update progress from cloud
+        if (results['progress'] != null) {
+          final cloudProgress = results['progress'] as List<DailyProgressModel>;
+          if (cloudProgress.isNotEmpty) {
+            _progressHistory = cloudProgress;
+            await _storage.saveProgressData(_progressHistory);
+          }
+        }
+        
+        // Update goals from cloud
+        if (results['goals'] != null) {
+          _currentGoals = results['goals'] as DailyGoals;
+          await _storage.saveGoals(_currentGoals!.toJson());
+        }
+        
+        // Update workout history from cloud
+        if (results['workoutHistory'] != null) {
+          final cloudHistory = results['workoutHistory'] as List<WorkoutHistoryEntry>;
+          if (cloudHistory.isNotEmpty) {
+            _workoutHistory = cloudHistory;
+            await _storage.saveWorkoutHistory(
+              _workoutHistory.map((e) => e.toJson()).toList(),
+            );
+          }
+        }
+      } else {
+        // If cloud sync fails, sync local data up
+        await syncToCloud();
+      }
+    } catch (e) {
+      // On error, try to sync local data up
+      print('Error syncing from cloud: $e');
+    }
+  }
+
+  /// Sync all data to cloud
+  Future<bool> syncToCloud() async {
+    if (!_authService.isLoggedIn) return false;
+    
+    try {
+      setLoading(true, 'Syncing data...');
+      
+      // Sync user data
+      if (_localUserData != null) {
+        await _firestoreService.syncUserData(_localUserData!);
+      }
+      
+      // Sync progress
+      await _firestoreService.syncProgress(_progressHistory);
+      
+      // Sync goals
+      if (_currentGoals != null) {
+        await _firestoreService.syncGoals(_currentGoals!);
+      }
+      
+      // Sync workout history
+      await _firestoreService.syncWorkoutHistory(_workoutHistory);
+      
+      setLoading(false);
+      return true;
+    } catch (e) {
+      setLoading(false);
+      return false;
+    }
+  }
+
+  /// Fetch all data from cloud
+  Future<bool> syncFromCloud() async {
+    if (!_authService.isLoggedIn) return false;
+    
+    try {
+      setLoading(true, 'Fetching data...');
+      
+      final results = await _firestoreService.fullSync();
+      
+      if (results['success'] == true) {
+        // Update local data with cloud data
+        if (results['progress'] != null) {
+          _progressHistory = results['progress'] as List<DailyProgressModel>;
+          await _storage.saveProgressData(_progressHistory);
+        }
+        
+        if (results['goals'] != null) {
+          _currentGoals = results['goals'] as DailyGoals;
+          await _storage.saveGoals(_currentGoals!.toJson());
+        }
+        
+        if (results['workoutHistory'] != null) {
+          _workoutHistory = results['workoutHistory'] as List<WorkoutHistoryEntry>;
+          await _storage.saveWorkoutHistory(
+            _workoutHistory.map((e) => e.toJson()).toList(),
+          );
+        }
+        
+        setLoading(false);
+        notifyListeners();
+        return true;
+      }
+      
+      setLoading(false);
+      return false;
+    } catch (e) {
+      setLoading(false);
+      return false;
+    }
   }
 }
 

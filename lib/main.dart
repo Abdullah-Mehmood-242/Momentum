@@ -5,6 +5,9 @@ import 'package:momentum/firebase_options.dart';
 import 'package:momentum/core/state/app_state.dart';
 import 'package:momentum/core/services/storage_service.dart';
 import 'package:momentum/core/services/auth_service.dart';
+import 'package:momentum/core/services/connectivity_service.dart';
+import 'package:momentum/core/services/firestore_service.dart';
+import 'package:momentum/core/widgets/offline_banner.dart';
 import 'package:momentum/features/splash/presentation/screens/splash_screen.dart';
 
 void main() async {
@@ -14,6 +17,12 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  
+  // Enable Firestore offline persistence for real-time data caching
+  await FirestoreService().enableOfflinePersistence();
+  
+  // Initialize connectivity service
+  await ConnectivityService().initialize();
   
   // Initialize shared preferences
   final prefs = await SharedPreferences.getInstance();
@@ -43,8 +52,11 @@ class MyApp extends StatelessWidget {
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
           fontFamily: 'Montserrat Alternates',
         ),
-        home: const SplashScreen(),
+        home: const OfflineBanner(
+          child: SplashScreen(),
+        ),
       ),
     );
   }
 }
+

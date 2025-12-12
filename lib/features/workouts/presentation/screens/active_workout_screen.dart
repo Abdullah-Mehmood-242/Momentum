@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:momentum/core/models/models.dart';
+import 'package:momentum/core/models/workout_history_model.dart';
 import 'package:momentum/core/state/app_state.dart';
 
 class ActiveWorkoutScreen extends StatefulWidget {
@@ -18,7 +19,6 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
   int _totalElapsedSeconds = 0;
   Timer? _timer;
   bool _isPaused = false;
-  bool _isCompleted = false;
 
   ExerciseModel get _currentExercise => widget.workout.exercises[_currentExerciseIndex];
   bool get _isLastExercise => _currentExerciseIndex == widget.workout.exercises.length - 1;
@@ -99,11 +99,22 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
 
   Future<void> _completeWorkout() async {
     _timer?.cancel();
-    setState(() => _isCompleted = true);
 
     final appState = AppStateProvider.of(context);
     final durationMinutes = (_totalElapsedSeconds / 60).ceil();
+    final caloriesBurned = widget.workout.caloriesPerMinute * durationMinutes;
+    
+    // Update progress (existing functionality)
     await appState.completeWorkout(widget.workout, durationMinutes);
+    
+    // Add to workout history (new functionality)
+    final historyEntry = WorkoutHistoryEntry.create(
+      workoutId: widget.workout.id,
+      workoutTitle: widget.workout.title,
+      durationMinutes: durationMinutes,
+      caloriesBurned: caloriesBurned,
+    );
+    await appState.addWorkoutToHistory(historyEntry);
 
     if (!mounted) return;
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:momentum/core/state/app_state.dart';
+import 'package:momentum/core/utils/page_transitions.dart';
 import 'package:momentum/features/auth/presentation/screens/register_screen.dart';
 import 'package:momentum/features/auth/presentation/screens/forgot_password_screen.dart';
 import 'package:momentum/features/home/presentation/screens/dashboard_screen.dart';
@@ -43,7 +44,7 @@ class _LoginScreenState extends State<LoginScreen> {
     if (result.success) {
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(builder: (context) => const DashboardScreen()),
+        FadePageRoute(page: const DashboardScreen()),
         (Route<dynamic> route) => false,
       );
     } else {
@@ -150,7 +151,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const ForgotPasswordScreen()),
+                      SlidePageRoute(page: const ForgotPasswordScreen()),
                     );
                   },
                   child: const Text(
@@ -199,7 +200,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     onPressed: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => const RegisterScreen()),
+                        SlidePageRoute(page: const RegisterScreen()),
                       );
                     },
                     child: const Text(

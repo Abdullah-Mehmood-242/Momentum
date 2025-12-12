@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:momentum/core/models/models.dart';
+import 'package:momentum/core/utils/page_transitions.dart';
 import 'package:momentum/features/workouts/presentation/screens/active_workout_screen.dart';
 
 class WorkoutDetailScreen extends StatelessWidget {
@@ -118,9 +119,7 @@ class WorkoutDetailScreen extends StatelessWidget {
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
-                        builder: (context) => ActiveWorkoutScreen(workout: workout),
-                      ),
+                      SlideUpPageRoute(page: ActiveWorkoutScreen(workout: workout)),
                     );
                   },
                   style: ElevatedButton.styleFrom(

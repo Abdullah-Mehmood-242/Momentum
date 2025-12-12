@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:momentum/core/state/app_state.dart';
+import 'package:momentum/core/utils/page_transitions.dart';
 import 'package:momentum/features/profile/presentation/screens/edit_profile_screen.dart';
 import 'package:momentum/features/profile/presentation/screens/security_screen.dart';
 import 'package:momentum/features/profile/presentation/screens/terms_conditions_screen.dart';
@@ -55,7 +56,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const EditProfileScreen()),
+                    SlidePageRoute(page: const EditProfileScreen()),
                   );
                 },
               ),
@@ -68,12 +69,85 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const SecurityScreen()),
+                    SlidePageRoute(page: const SecurityScreen()),
                   );
                 },
               ),
               const SizedBox(height: 10),
               _buildNotificationSetting(notificationsEnabled, appState),
+              const SizedBox(height: 10),
+              // Cloud Sync Button
+              if (appState.isLoggedIn)
+                GestureDetector(
+                  onTap: () async {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Row(
+                          children: [
+                            SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            ),
+                            SizedBox(width: 12),
+                            Text('Syncing data...'),
+                          ],
+                        ),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                    final success = await appState.syncToCloud();
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            success ? 'Data synced successfully!' : 'Sync failed. Please try again.',
+                          ),
+                          backgroundColor: success ? Colors.green : Colors.red,
+                          duration: const Duration(seconds: 2),
+                        ),
+                      );
+                    }
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 16.0),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF4A3D7E),
+                      borderRadius: BorderRadius.circular(30.0),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.cloud_sync, color: Colors.white),
+                        SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Sync Data',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                'Sync progress & history to cloud',
+                                style: TextStyle(color: Colors.white54, fontSize: 12),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Icon(Icons.sync, color: Colors.white, size: 20),
+                      ],
+                    ),
+                  ),
+                ),
               const SizedBox(height: 30),
               const Text(
                 'Support & Legal',
@@ -92,7 +166,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const HelpCenterScreen()),
+                    SlidePageRoute(page: const HelpCenterScreen()),
                   );
                 },
               ),
@@ -104,7 +178,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const TermsConditionsScreen()),
+                    SlidePageRoute(page: const TermsConditionsScreen()),
                   );
                 },
               ),
@@ -117,7 +191,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const AboutAppScreen()),
+                    SlidePageRoute(page: const AboutAppScreen()),
                   );
                 },
               ),
@@ -262,7 +336,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         if (dialogContext.mounted) {
                           Navigator.pushAndRemoveUntil(
                             dialogContext,
-                            MaterialPageRoute(builder: (context) => const WelcomeScreen()),
+                            FadePageRoute(page: const WelcomeScreen()),
                             (Route<dynamic> route) => false,
                           );
                         }

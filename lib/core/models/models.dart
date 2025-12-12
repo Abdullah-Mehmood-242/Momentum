@@ -11,6 +11,7 @@ class UserModel {
   int? age;
   DateTime? dateOfBirth;
   bool useMetricUnits;
+  String? profileImagePath;
 
   UserModel({
     required this.id,
@@ -23,6 +24,7 @@ class UserModel {
     this.age,
     this.dateOfBirth,
     this.useMetricUnits = false,
+    this.profileImagePath,
   });
 
   Map<String, dynamic> toJson() => {
@@ -36,6 +38,7 @@ class UserModel {
     'age': age,
     'dateOfBirth': dateOfBirth?.toIso8601String(),
     'useMetricUnits': useMetricUnits,
+    'profileImagePath': profileImagePath,
   };
 
   factory UserModel.fromJson(Map<String, dynamic> json) => UserModel(
@@ -51,6 +54,7 @@ class UserModel {
         ? DateTime.parse(json['dateOfBirth']) 
         : null,
     useMetricUnits: json['useMetricUnits'] ?? false,
+    profileImagePath: json['profileImagePath'],
   );
 
   UserModel copyWith({
@@ -64,6 +68,7 @@ class UserModel {
     int? age,
     DateTime? dateOfBirth,
     bool? useMetricUnits,
+    String? profileImagePath,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -76,6 +81,7 @@ class UserModel {
       age: age ?? this.age,
       dateOfBirth: dateOfBirth ?? this.dateOfBirth,
       useMetricUnits: useMetricUnits ?? this.useMetricUnits,
+      profileImagePath: profileImagePath ?? this.profileImagePath,
     );
   }
 }

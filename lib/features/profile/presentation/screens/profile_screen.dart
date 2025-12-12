@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:momentum/core/state/app_state.dart';
+import 'package:momentum/core/widgets/profile_picture_widget.dart';
+import 'package:momentum/core/utils/page_transitions.dart';
 import 'package:momentum/features/profile/presentation/screens/edit_profile_screen.dart';
 import 'package:momentum/features/profile/presentation/screens/settings_screen.dart';
 import 'package:momentum/features/auth/presentation/screens/welcome_screen.dart';
@@ -27,7 +29,7 @@ class ProfileScreen extends StatelessWidget {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                SlidePageRoute(page: const SettingsScreen()),
               );
             },
           ),
@@ -38,17 +40,13 @@ class ProfileScreen extends StatelessWidget {
           padding: const EdgeInsets.all(24.0),
           child: Column(
             children: [
-              CircleAvatar(
-                radius: 60,
-                backgroundColor: const Color(0xFF4A3D7E),
-                child: Text(
-                  userName.isNotEmpty ? userName.substring(0, 1).toUpperCase() : 'G',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 48,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+              ProfilePictureWidget(
+                imagePath: localUser?.profileImagePath,
+                name: userName.isNotEmpty ? userName : 'Guest',
+                size: 120,
+                showEditButton: false,
+                borderWidth: 3,
+                borderColor: const Color(0xFFE8FF78),
               ),
               const SizedBox(height: 20),
               Text(
@@ -91,7 +89,7 @@ class ProfileScreen extends StatelessWidget {
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const EditProfileScreen()),
+                      SlidePageRoute(page: const EditProfileScreen()),
                     );
                   },
                   style: ElevatedButton.styleFrom(
@@ -162,7 +160,7 @@ class ProfileScreen extends StatelessWidget {
               if (context.mounted) {
                 Navigator.pushAndRemoveUntil(
                   context,
-                  MaterialPageRoute(builder: (context) => const WelcomeScreen()),
+                  FadePageRoute(page: const WelcomeScreen()),
                   (route) => false,
                 );
               }

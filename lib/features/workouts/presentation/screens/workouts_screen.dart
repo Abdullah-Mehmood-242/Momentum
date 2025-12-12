@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:momentum/core/state/app_state.dart';
 import 'package:momentum/core/models/models.dart';
+import 'package:momentum/core/utils/page_transitions.dart';
 import 'package:momentum/features/workouts/presentation/screens/workout_detail_screen.dart';
+import 'package:momentum/features/workouts/presentation/screens/workout_history_screen.dart';
 import 'package:momentum/features/profile/presentation/screens/settings_screen.dart';
 
 class WorkoutsScreen extends StatefulWidget {
@@ -31,11 +33,21 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
         title: const Text('Workout', style: TextStyle(color: Colors.white)),
         actions: [
           IconButton(
+            icon: const Icon(Icons.history, color: Colors.white),
+            tooltip: 'Workout History',
+            onPressed: () {
+              Navigator.push(
+                context,
+                SlidePageRoute(page: const WorkoutHistoryScreen()),
+              );
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.settings, color: Colors.white),
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                SlidePageRoute(page: const SettingsScreen()),
               );
             },
           ),
@@ -66,9 +78,7 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
                           onTap: () {
                             Navigator.push(
                               context,
-                              MaterialPageRoute(
-                                builder: (context) => WorkoutDetailScreen(workout: workout),
-                              ),
+                              SlideUpPageRoute(page: WorkoutDetailScreen(workout: workout)),
                             );
                           },
                         );

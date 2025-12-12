@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:momentum/core/state/app_state.dart';
+import 'package:momentum/core/utils/page_transitions.dart';
 import 'package:percent_indicator/percent_indicator.dart';
 import 'package:momentum/features/workouts/presentation/screens/workout_detail_screen.dart';
 import 'package:momentum/features/profile/presentation/screens/settings_screen.dart';
+import 'package:momentum/features/goals/presentation/screens/goals_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -14,6 +16,7 @@ class HomeScreen extends StatelessWidget {
     final todayProgress = appState.todayProgress;
     final activityPercent = appState.todayActivityPercent;
     final workouts = appState.workouts;
+    final goals = appState.currentGoals;
 
     return Scaffold(
       backgroundColor: const Color(0xFF201A3F),
@@ -24,11 +27,21 @@ class HomeScreen extends StatelessWidget {
         title: const Text('Home', style: TextStyle(color: Colors.white)),
         actions: [
           IconButton(
+            icon: const Icon(Icons.flag, color: Colors.white),
+            tooltip: 'Daily Goals',
+            onPressed: () {
+              Navigator.push(
+                context,
+                SlidePageRoute(page: const GoalsScreen()),
+              );
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.settings, color: Colors.white),
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                SlidePageRoute(page: const SettingsScreen()),
               );
             },
           ),
@@ -49,12 +62,20 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 30),
-              Row(
-                children: [
-                  _buildCircularProgress(activityPercent),
-                  const SizedBox(width: 30),
-                  _buildActivityStats(todayProgress),
-                ],
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    SlidePageRoute(page: const GoalsScreen()),
+                  );
+                },
+                child: Row(
+                  children: [
+                    _buildCircularProgress(activityPercent),
+                    const SizedBox(width: 30),
+                    _buildActivityStats(todayProgress, goals),
+                  ],
+                ),
               ),
               const SizedBox(height: 40),
               const Text(
@@ -105,24 +126,73 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildActivityStats(dynamic todayProgress) {
+  Widget _buildActivityStats(dynamic todayProgress, dynamic goals) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Calories Burnt: ${todayProgress.caloriesBurnt} kcal',
-          style: const TextStyle(color: Colors.white, fontSize: 16),
+        _buildStatRow(
+          icon: Icons.local_fire_department,
+          label: 'Calories',
+          value: todayProgress.caloriesBurnt,
+          target: goals?.targetCalories ?? 500,
+          unit: 'kcal',
+          color: const Color(0xFFFF8A65),
         ),
         const SizedBox(height: 10),
-        Text(
-          'Steps: ${todayProgress.steps}',
-          style: const TextStyle(color: Colors.white, fontSize: 16),
+        _buildStatRow(
+          icon: Icons.directions_walk,
+          label: 'Steps',
+          value: todayProgress.steps,
+          target: goals?.targetSteps ?? 10000,
+          unit: '',
+          color: const Color(0xFF64B5F6),
         ),
         const SizedBox(height: 10),
-        Text(
-          'Active Minutes: ${todayProgress.activeMinutes} min',
-          style: const TextStyle(color: Colors.white, fontSize: 16),
+        _buildStatRow(
+          icon: Icons.timer,
+          label: 'Active',
+          value: todayProgress.activeMinutes,
+          target: goals?.targetActiveMinutes ?? 60,
+          unit: 'min',
+          color: const Color(0xFF81C784),
         ),
+        const SizedBox(height: 8),
+        const Text(
+          'Tap to view goals →',
+          style: TextStyle(color: Colors.white38, fontSize: 12),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatRow({
+    required IconData icon,
+    required String label,
+    required int value,
+    required int target,
+    required String unit,
+    required Color color,
+  }) {
+    final percent = (value / target).clamp(0.0, 1.0);
+    final isComplete = percent >= 1.0;
+    
+    return Row(
+      children: [
+        Icon(icon, color: color, size: 18),
+        const SizedBox(width: 8),
+        Text(
+          '$label: $value${unit.isNotEmpty ? ' $unit' : ''}',
+          style: TextStyle(
+            color: isComplete ? color : Colors.white,
+            fontSize: 14,
+            fontWeight: isComplete ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+        if (isComplete)
+          Padding(
+            padding: const EdgeInsets.only(left: 4),
+            child: Icon(Icons.check_circle, color: color, size: 14),
+          ),
       ],
     );
   }
@@ -142,9 +212,7 @@ class HomeScreen extends StatelessWidget {
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (context) => WorkoutDetailScreen(workout: workout),
-              ),
+              SlideUpPageRoute(page: WorkoutDetailScreen(workout: workout)),
             );
           },
         );

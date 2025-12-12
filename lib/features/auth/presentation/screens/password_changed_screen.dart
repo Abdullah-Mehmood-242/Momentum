@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:momentum/core/utils/page_transitions.dart';
+import 'package:momentum/core/widgets/animated_list_item.dart';
 import 'package:momentum/features/auth/presentation/screens/login_screen.dart';
 
 class PasswordChangedScreen extends StatelessWidget {
@@ -13,7 +15,11 @@ class PasswordChangedScreen extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.check_circle, color: Colors.white, size: 100),
+            AnimatedScaleIn(
+              duration: const Duration(milliseconds: 600),
+              curve: Curves.elasticOut,
+              child: const Icon(Icons.check_circle, color: Color(0xFFE8FF78), size: 100),
+            ),
             const SizedBox(height: 30),
             const Text(
               'Password Changed!',
@@ -40,7 +46,7 @@ class PasswordChangedScreen extends StatelessWidget {
                 onPressed: () {
                   Navigator.pushAndRemoveUntil(
                     context,
-                    MaterialPageRoute(builder: (context) => const LoginScreen()),
+                    FadePageRoute(page: const LoginScreen()),
                     (Route<dynamic> route) => false,
                   );
                 },

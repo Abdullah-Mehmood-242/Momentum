@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:momentum/core/state/app_state.dart';
+import 'package:momentum/core/utils/page_transitions.dart';
 import 'package:momentum/features/auth/presentation/screens/login_screen.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
@@ -214,7 +215,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     onPressed: () {
                       Navigator.pushReplacement(
                         context,
-                        MaterialPageRoute(builder: (context) => const LoginScreen()),
+                        SlidePageRoute(page: const LoginScreen()),
                       );
                     },
                     style: ElevatedButton.styleFrom(
@@ -246,7 +247,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     onPressed: () {
                       Navigator.pushReplacement(
                         context,
-                        MaterialPageRoute(builder: (context) => const LoginScreen()),
+                        SlidePageRoute(page: const LoginScreen()),
                       );
                     },
                     child: const Text(

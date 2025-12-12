@@ -2,6 +2,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:momentum/core/state/app_state.dart';
+import 'package:momentum/core/services/image_service.dart';
+import 'package:momentum/core/utils/error_handler.dart';
+import 'package:momentum/core/utils/page_transitions.dart';
 import 'package:momentum/features/profile/presentation/screens/settings_screen.dart';
 
 class EditProfileScreen extends StatefulWidget {
@@ -22,7 +25,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   bool _isLoading = false;
   bool _isInitialized = false;
   File? _profileImage;
+  String? _existingImagePath;
   final ImagePicker _picker = ImagePicker();
+  final ImageService _imageService = ImageService();
 
   @override
   void initState() {
@@ -49,6 +54,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       _ageController.text = user?.age?.toString() ?? '';
       _dateOfBirth = user?.dateOfBirth;
       _useMetricUnits = user?.useMetricUnits ?? false;
+      _existingImagePath = user?.profileImagePath;
     }
   }
 
@@ -76,22 +82,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           _profileImage = File(pickedFile.path);
         });
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Profile picture updated!'),
-              backgroundColor: Colors.green,
-            ),
-          );
+          ErrorHandler.showSuccess(context, 'Photo selected! Save to apply changes.');
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error picking image: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        ErrorHandler.showError(context, 'Error picking image: $e');
       }
     }
   }
@@ -137,14 +133,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       _pickImage(ImageSource.gallery);
                     },
                   ),
-                  if (_profileImage != null)
+                  if (_profileImage != null || _existingImagePath != null)
                     _buildImageSourceOption(
                       icon: Icons.delete,
                       label: 'Remove',
                       color: Colors.red,
                       onTap: () {
                         Navigator.pop(context);
-                        setState(() => _profileImage = null);
+                        setState(() {
+                          _profileImage = null;
+                          _existingImagePath = null;
+                        });
                       },
                     ),
                 ],
@@ -185,6 +184,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
+  ImageProvider? _getProfileImage() {
+    if (_profileImage != null) {
+      return FileImage(_profileImage!);
+    } else if (_existingImagePath != null && _existingImagePath!.isNotEmpty) {
+      final file = File(_existingImagePath!);
+      if (file.existsSync()) {
+        return FileImage(file);
+      }
+    }
+    return null;
+  }
+
   Future<void> _selectDate() async {
     final picked = await showDatePicker(
       context: context,
@@ -222,6 +233,25 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     setState(() => _isLoading = true);
 
     final appState = AppStateProvider.of(context);
+    
+    // Save profile picture if changed
+    String? newImagePath = _existingImagePath;
+    if (_profileImage != null && appState.localUserData != null) {
+      newImagePath = await _imageService.saveProfileImage(
+        _profileImage!,
+        appState.localUserData!.id,
+      );
+    } else if (_profileImage == null && _existingImagePath == null) {
+      // User removed the photo
+      newImagePath = null;
+    }
+    
+    // Update profile picture path
+    if (newImagePath != _existingImagePath) {
+      await appState.updateProfilePicture(newImagePath);
+    }
+    
+    // Update other profile info
     final success = await appState.updateProfile(
       name: _nameController.text.trim(),
       email: _emailController.text.trim(),
@@ -237,20 +267,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     if (!mounted) return;
 
     if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Profile updated successfully!'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      ErrorHandler.showSuccess(context, 'Profile updated successfully!');
       Navigator.pop(context);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Failed to update profile. Please try again.'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      ErrorHandler.showError(context, 'Failed to update profile. Please try again.');
     }
   }
 
@@ -272,7 +292,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                SlidePageRoute(page: const SettingsScreen()),
               );
             },
           ),
@@ -296,10 +316,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     child: CircleAvatar(
                       radius: 60,
                       backgroundColor: const Color(0xFF4A3D7E),
-                      backgroundImage: _profileImage != null 
-                          ? FileImage(_profileImage!) 
-                          : null,
-                      child: _profileImage == null
+                      backgroundImage: _getProfileImage(),
+                      child: (_profileImage == null && _existingImagePath == null)
                           ? Text(
                               (_nameController.text.isNotEmpty 
                                   ? _nameController.text 

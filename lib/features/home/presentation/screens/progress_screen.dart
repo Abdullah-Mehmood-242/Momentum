@@ -1,6 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:momentum/core/state/app_state.dart';
+import 'package:momentum/core/utils/page_transitions.dart';
 import 'package:momentum/features/profile/presentation/screens/settings_screen.dart';
 
 class ProgressScreen extends StatefulWidget {
@@ -33,7 +34,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                SlidePageRoute(page: const SettingsScreen()),
               );
             },
           ),

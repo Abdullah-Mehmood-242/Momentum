@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:momentum/core/state/app_state.dart';
+import 'package:momentum/core/utils/page_transitions.dart';
 import 'package:momentum/features/auth/presentation/screens/login_screen.dart';
 import 'package:momentum/features/home/presentation/screens/dashboard_screen.dart';
 
@@ -48,7 +49,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (result.success) {
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(builder: (context) => const DashboardScreen()),
+        FadePageRoute(page: const DashboardScreen()),
         (Route<dynamic> route) => false,
       );
     } else {
@@ -253,7 +254,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       onPressed: () {
                         Navigator.pushReplacement(
                           context,
-                          MaterialPageRoute(builder: (context) => const LoginScreen()),
+                          SlidePageRoute(page: const LoginScreen()),
                         );
                       },
                       child: const Text(

@@ -2,6 +2,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:momentum/core/state/app_state.dart';
 import 'package:momentum/core/utils/page_transitions.dart';
+import 'package:momentum/core/widgets/animated_list_item.dart';
 import 'package:momentum/features/profile/presentation/screens/settings_screen.dart';
 
 class ProgressScreen extends StatefulWidget {
@@ -46,40 +47,61 @@ class _ProgressScreenState extends State<ProgressScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildTimeToggle(),
+              AnimatedListItem(
+                index: 0,
+                child: _buildTimeToggle(),
+              ),
               const SizedBox(height: 30),
-              const Text(
-                'Calories Trend',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+              AnimatedListItem(
+                index: 1,
+                child: const Text(
+                  'Calories Trend',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
               const SizedBox(height: 20),
-              _buildChart(progressData),
+              AnimatedListItem(
+                index: 2,
+                child: _buildChart(progressData),
+              ),
               const SizedBox(height: 30),
-              const Text(
-                'This Month',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+              AnimatedListItem(
+                index: 3,
+                child: const Text(
+                  'This Month',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
               const SizedBox(height: 20),
-              _buildAchievements(workoutsThisMonth, totalActiveTime),
+              AnimatedListItem(
+                index: 4,
+                child: _buildAchievements(workoutsThisMonth, totalActiveTime),
+              ),
               const SizedBox(height: 30),
-              const Text(
-                'Personal Bests',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+              AnimatedListItem(
+                index: 5,
+                child: const Text(
+                  'Personal Bests',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
               const SizedBox(height: 20),
-              _buildPersonalBests(appState.personalBests),
+              AnimatedListItem(
+                index: 6,
+                child: _buildPersonalBests(appState.personalBests),
+              ),
             ],
           ),
         ),
@@ -112,7 +134,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
       return Container(
         height: 200,
         decoration: BoxDecoration(
-          color: const Color(0xFF4A3D7E).withOpacity(0.3),
+          color: const Color(0xFF4A3D7E).withAlpha(77), // 0.3 * 255 = 77
           borderRadius: BorderRadius.circular(16),
         ),
         child: const Center(
@@ -138,7 +160,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
       height: 200,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF4A3D7E).withOpacity(0.3),
+        color: const Color(0xFF4A3D7E).withAlpha(77), // 0.3 * 255 = 77
         borderRadius: BorderRadius.circular(16),
       ),
       child: LineChart(
@@ -191,7 +213,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
               ),
               belowBarData: BarAreaData(
                 show: true,
-                color: const Color(0xFFE8FF78).withOpacity(0.1),
+                color: const Color(0xFFE8FF78).withAlpha(26), // 0.1 * 255 = 26
               ),
             ),
           ],

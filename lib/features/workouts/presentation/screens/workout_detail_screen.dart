@@ -47,7 +47,7 @@ class WorkoutDetailScreen extends StatelessWidget {
                         end: Alignment.bottomCenter,
                         colors: [
                           Colors.transparent,
-                          const Color(0xFF201A3F).withOpacity(0.9),
+                          const Color(0xFF201A3F).withAlpha(230), // 0.9 * 255 = 230
                         ],
                       ),
                     ),

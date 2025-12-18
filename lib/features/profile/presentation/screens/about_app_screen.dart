@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class AboutAppScreen extends StatelessWidget {
   const AboutAppScreen({super.key});
@@ -22,34 +23,29 @@ class AboutAppScreen extends StatelessWidget {
           child: Column(
             children: [
               const SizedBox(height: 20),
-              // App Logo
-              Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF4A3D7E),
-                  borderRadius: BorderRadius.circular(30),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFFE8FF78).withAlpha(50),
-                      blurRadius: 20,
-                      spreadRadius: 2,
-                    ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(30),
-                  child: Image.asset(
-                    'assets/images/logo.png',
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return const Icon(
+              // App Logo - No box, display as-is
+              ClipRRect(
+                borderRadius: BorderRadius.circular(30),
+                child: Image.asset(
+                  'assets/images/logo.png',
+                  width: 120,
+                  height: 120,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      width: 200,
+                      height: 200,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF4A3D7E),
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      child: const Icon(
                         Icons.fitness_center,
                         size: 60,
                         color: Color(0xFFE8FF78),
-                      );
-                    },
-                  ),
+                      ),
+                    );
+                  },
                 ),
               ),
               const SizedBox(height: 24),
@@ -131,18 +127,26 @@ class AboutAppScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     const Text(
-                      '© 2024 Momentum. All rights reserved.',
+                      '© 2025 Momentum. All rights reserved.',
                       style: TextStyle(color: Colors.white54),
                     ),
                     const SizedBox(height: 20),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        _buildSocialButton(Icons.language, 'Website'),
-                        const SizedBox(width: 16),
-                        _buildSocialButton(Icons.alternate_email, 'Twitter'),
-                        const SizedBox(width: 16),
-                        _buildSocialButton(Icons.camera_alt, 'Instagram'),
+                        _buildSocialButton(
+                          context,
+                          'github',
+                          'GitHub',
+                          'https://github.com/Abdullah-Mehmood-242/',
+                        ),
+                        const SizedBox(width: 24),
+                        _buildSocialButton(
+                          context,
+                          'linkedin',
+                          'LinkedIn',
+                          'https://www.linkedin.com/in/abdullahmehmood242/',
+                        ),
                       ],
                     ),
                   ],
@@ -242,16 +246,32 @@ class AboutAppScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSocialButton(IconData icon, String tooltip) {
+  Widget _buildSocialButton(BuildContext context, String type, String tooltip, String url) {
     return Tooltip(
       message: tooltip,
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: const Color(0xFF201A3F),
-          borderRadius: BorderRadius.circular(12),
+      child: GestureDetector(
+        onTap: () async {
+          final uri = Uri.parse(url);
+          if (await canLaunchUrl(uri)) {
+            await launchUrl(uri, mode: LaunchMode.externalApplication);
+          } else {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Could not open $tooltip')),
+              );
+            }
+          }
+        },
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: const Color(0xFF201A3F),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: type == 'github'
+              ? const Icon(Icons.code, color: Colors.white, size: 24)
+              : const Icon(Icons.business_center, color: Colors.white, size: 24),
         ),
-        child: Icon(icon, color: Colors.white, size: 20),
       ),
     );
   }

@@ -3,16 +3,30 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/models.dart';
 
 /// Service for persisting data locally using SharedPreferences
+/// All user-specific data is now prefixed with userId for isolation
 class StorageService {
   static const String _currentUserKey = 'current_user';
   static const String _usersKey = 'registered_users';
-  static const String _progressKey = 'progress_data';
-  static const String _personalBestsKey = 'personal_bests';
   static const String _notificationsEnabledKey = 'notifications_enabled';
+  static const String _biometricEnabledKey = 'biometric_enabled';
 
   final SharedPreferences _prefs;
+  String? _currentUserId; // Track current user for data isolation
 
   StorageService(this._prefs);
+
+  /// Set the current user ID for data isolation
+  void setCurrentUserId(String? userId) {
+    _currentUserId = userId;
+  }
+
+  /// Get user-specific key for storage
+  String _userKey(String baseKey) {
+    if (_currentUserId == null || _currentUserId!.isEmpty) {
+      return '${baseKey}_guest';
+    }
+    return '${baseKey}_$_currentUserId';
+  }
 
   // ==================== User Management ====================
 
@@ -94,15 +108,17 @@ class StorageService {
 
   // ==================== Progress Tracking ====================
 
-  /// Save progress data
+  /// Save progress data (user-specific)
   Future<bool> saveProgressData(List<DailyProgressModel> progressList) async {
+    final key = _userKey('progress_data');
     final jsonList = progressList.map((p) => p.toJson()).toList();
-    return await _prefs.setString(_progressKey, jsonEncode(jsonList));
+    return await _prefs.setString(key, jsonEncode(jsonList));
   }
 
-  /// Get progress data
+  /// Get progress data (user-specific)
   List<DailyProgressModel> getProgressData() {
-    final json = _prefs.getString(_progressKey);
+    final key = _userKey('progress_data');
+    final json = _prefs.getString(key);
     if (json == null) return [];
     
     final List<dynamic> jsonList = jsonDecode(json);
@@ -147,15 +163,17 @@ class StorageService {
 
   // ==================== Personal Bests ====================
 
-  /// Save personal bests
+  /// Save personal bests (user-specific)
   Future<bool> savePersonalBests(List<PersonalBest> bests) async {
+    final key = _userKey('personal_bests');
     final jsonList = bests.map((b) => b.toJson()).toList();
-    return await _prefs.setString(_personalBestsKey, jsonEncode(jsonList));
+    return await _prefs.setString(key, jsonEncode(jsonList));
   }
 
-  /// Get personal bests
+  /// Get personal bests (user-specific)
   List<PersonalBest> getPersonalBests() {
-    final json = _prefs.getString(_personalBestsKey);
+    final key = _userKey('personal_bests');
+    final json = _prefs.getString(key);
     if (json == null) return [];
     
     final List<dynamic> jsonList = jsonDecode(json);
@@ -190,41 +208,42 @@ class StorageService {
 
   // ==================== Goals ====================
 
-  static const String _goalsKey = 'daily_goals';
-
-  /// Save daily goals
+  /// Save daily goals (user-specific)
   Future<bool> saveGoals(Map<String, dynamic> goals) async {
-    return await _prefs.setString(_goalsKey, jsonEncode(goals));
+    final key = _userKey('daily_goals');
+    return await _prefs.setString(key, jsonEncode(goals));
   }
 
-  /// Get daily goals
+  /// Get daily goals (user-specific)
   Map<String, dynamic>? getGoals() {
-    final json = _prefs.getString(_goalsKey);
+    final key = _userKey('daily_goals');
+    final json = _prefs.getString(key);
     if (json == null) return null;
     return jsonDecode(json);
   }
 
   // ==================== Workout History ====================
 
-  static const String _workoutHistoryKey = 'workout_history';
-
-  /// Save workout history
+  /// Save workout history (user-specific)
   Future<bool> saveWorkoutHistory(List<Map<String, dynamic>> history) async {
-    return await _prefs.setString(_workoutHistoryKey, jsonEncode(history));
+    final key = _userKey('workout_history');
+    return await _prefs.setString(key, jsonEncode(history));
   }
 
-  /// Get workout history
+  /// Get workout history (user-specific)
   List<Map<String, dynamic>> getWorkoutHistory() {
-    final json = _prefs.getString(_workoutHistoryKey);
+    final key = _userKey('workout_history');
+    final json = _prefs.getString(key);
     if (json == null) return [];
     
     final List<dynamic> jsonList = jsonDecode(json);
     return jsonList.cast<Map<String, dynamic>>();
   }
 
-  /// Clear workout history
+  /// Clear workout history (user-specific)
   Future<bool> clearWorkoutHistory() async {
-    return await _prefs.remove(_workoutHistoryKey);
+    final key = _userKey('workout_history');
+    return await _prefs.remove(key);
   }
 
   /// Clear all data (for testing/reset)

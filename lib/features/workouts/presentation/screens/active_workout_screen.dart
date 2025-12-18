@@ -89,7 +89,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
   }
 
   void _skipExercise() {
-    _totalElapsedSeconds += _secondsRemaining;
+    // Don't add remaining seconds - only count actual time spent
     if (_isLastExercise) {
       _completeWorkout();
     } else {

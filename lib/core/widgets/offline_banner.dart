@@ -17,7 +17,6 @@ class OfflineBanner extends StatefulWidget {
 
 class _OfflineBannerState extends State<OfflineBanner> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-  late Animation<double> _slideAnimation;
   late Animation<double> _fadeAnimation;
   
   bool _isOffline = false;
@@ -31,14 +30,6 @@ class _OfflineBannerState extends State<OfflineBanner> with SingleTickerProvider
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    
-    _slideAnimation = Tween<double>(
-      begin: -1.0,
-      end: 0.0,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeOutCubic,
-    ));
     
     _fadeAnimation = Tween<double>(
       begin: 0.0,

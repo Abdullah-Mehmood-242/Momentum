@@ -331,17 +331,23 @@ class _GoalsScreenState extends State<GoalsScreen> {
   }
 
   void _showEditGoalsDialog(BuildContext context, DailyGoals currentGoals) {
+    final appState = AppStateProvider.of(context);
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (context) => EditGoalsBottomSheet(
+      builder: (bottomSheetContext) => EditGoalsBottomSheet(
         currentGoals: currentGoals,
         onSave: (goals) async {
-          final appState = AppStateProvider.of(context);
           await appState.updateGoals(goals);
           if (mounted) {
-            ErrorHandler.showSuccess(context, 'Goals updated!');
+            scaffoldMessenger.showSnackBar(
+              const SnackBar(
+                content: Text('Goals updated!'),
+                backgroundColor: Colors.green,
+              ),
+            );
             setState(() {});
           }
         },

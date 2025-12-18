@@ -87,11 +87,14 @@ class AppState extends ChangeNotifier {
 
     // Load local user data from storage
     _localUserData = _storage.getCurrentUser();
+    
+    // Set current user ID for data isolation
+    _storage.setCurrentUserId(_localUserData?.id ?? firebaseUser?.uid);
 
     // Load workout library
     _workouts = WorkoutData.getWorkouts();
 
-    // Load progress history
+    // Load user-specific progress history
     _progressHistory = _storage.getProgressData();
     if (_progressHistory.isEmpty) {
       // Initialize empty progress for new user
@@ -154,6 +157,9 @@ class AppState extends ChangeNotifier {
     );
 
     if (result.success && result.user != null) {
+      // Set current user ID for data isolation BEFORE saving data
+      _storage.setCurrentUserId(result.user!.uid);
+      
       // Save local user data for additional profile info
       _localUserData = UserModel(
         id: result.user!.uid,
@@ -164,6 +170,15 @@ class AppState extends ChangeNotifier {
       );
       await _storage.saveCurrentUser(_localUserData!);
       await _storage.registerUser(_localUserData!);
+      
+      // Initialize fresh data for new user
+      _progressHistory = WorkoutData.getInitialProgressData();
+      await _storage.saveProgressData(_progressHistory);
+      _personalBests = WorkoutData.getDefaultPersonalBests();
+      await _storage.savePersonalBests(_personalBests);
+      _currentGoals = DailyGoals.defaults();
+      await _storage.saveGoals(_currentGoals!.toJson());
+      _workoutHistory = [];
       
       // Sync initial user data to Firestore
       await _firestoreService.syncUserData(_localUserData!);
@@ -185,6 +200,9 @@ class AppState extends ChangeNotifier {
     );
 
     if (result.success && result.user != null) {
+      // Set current user ID for data isolation BEFORE loading data
+      _storage.setCurrentUserId(result.user!.uid);
+      
       // Load or create local user data
       _localUserData = _storage.getCurrentUser();
       if (_localUserData == null || _localUserData!.id != result.user!.uid) {
@@ -197,6 +215,9 @@ class AppState extends ChangeNotifier {
         );
         await _storage.saveCurrentUser(_localUserData!);
       }
+      
+      // Reload all user-specific data
+      await _reloadUserData();
       
       // Fetch data from Firestore and merge with local
       await _syncDataFromCloud();
@@ -217,7 +238,39 @@ class AppState extends ChangeNotifier {
     await _authService.logout();
     _localUserData = null;
     await _storage.clearCurrentUser();
+    
+    // Clear user ID - switch to guest mode
+    _storage.setCurrentUserId(null);
+    
+    // Reload data for guest mode
+    await _reloadUserData();
+    
     notifyListeners();
+  }
+
+  /// Reload user-specific data from storage
+  Future<void> _reloadUserData() async {
+    _progressHistory = _storage.getProgressData();
+    if (_progressHistory.isEmpty) {
+      _progressHistory = WorkoutData.getInitialProgressData();
+      await _storage.saveProgressData(_progressHistory);
+    }
+
+    _personalBests = _storage.getPersonalBests();
+    if (_personalBests.isEmpty) {
+      _personalBests = WorkoutData.getDefaultPersonalBests();
+      await _storage.savePersonalBests(_personalBests);
+    }
+
+    final goalsJson = _storage.getGoals();
+    if (goalsJson != null) {
+      _currentGoals = DailyGoals.fromJson(goalsJson);
+    } else {
+      _currentGoals = DailyGoals.defaults();
+    }
+
+    final historyJson = _storage.getWorkoutHistory();
+    _workoutHistory = historyJson.map((e) => WorkoutHistoryEntry.fromJson(e)).toList();
   }
 
   // ==================== Profile Methods ====================
@@ -508,7 +561,7 @@ class AppState extends ChangeNotifier {
       }
     } catch (e) {
       // On error, try to sync local data up
-      print('Error syncing from cloud: $e');
+      debugPrint('Error syncing from cloud: $e');
     }
   }
 

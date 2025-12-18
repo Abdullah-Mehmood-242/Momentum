@@ -1,13 +1,48 @@
 import 'package:flutter/material.dart';
 import 'package:momentum/core/state/app_state.dart';
 import 'package:momentum/core/utils/page_transitions.dart';
+import 'package:momentum/core/widgets/animated_list_item.dart';
 import 'package:percent_indicator/percent_indicator.dart';
 import 'package:momentum/features/workouts/presentation/screens/workout_detail_screen.dart';
 import 'package:momentum/features/profile/presentation/screens/settings_screen.dart';
 import 'package:momentum/features/goals/presentation/screens/goals_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+    
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+    );
+    
+    _slideAnimation = Tween<Offset>(begin: const Offset(0, 0.1), end: Offset.zero).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
+    );
+    
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -47,48 +82,66 @@ class HomeScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Hello, $userName',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
+      body: FadeTransition(
+        opacity: _fadeAnimation,
+        child: SlideTransition(
+          position: _slideAnimation,
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AnimatedListItem(
+                    index: 0,
+                    child: Text(
+                      'Hello, $userName',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 30),
+                  AnimatedListItem(
+                    index: 1,
+                    child: GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          SlidePageRoute(page: const GoalsScreen()),
+                        );
+                      },
+                      child: Row(
+                        children: [
+                          _buildCircularProgress(activityPercent),
+                          const SizedBox(width: 30),
+                          _buildActivityStats(todayProgress, goals),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 40),
+                  AnimatedListItem(
+                    index: 2,
+                    child: const Text(
+                      'Recommended Workouts:',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  AnimatedListItem(
+                    index: 3,
+                    child: _buildWorkoutRecommendations(context, workouts),
+                  ),
+                ],
               ),
-              const SizedBox(height: 30),
-              GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    SlidePageRoute(page: const GoalsScreen()),
-                  );
-                },
-                child: Row(
-                  children: [
-                    _buildCircularProgress(activityPercent),
-                    const SizedBox(width: 30),
-                    _buildActivityStats(todayProgress, goals),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 40),
-              const Text(
-                'Recommended Workouts:',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 20),
-              _buildWorkoutRecommendations(context, workouts),
-            ],
+            ),
           ),
         ),
       ),
@@ -201,28 +254,41 @@ class HomeScreen extends StatelessWidget {
     // Take first 2 workouts as recommendations
     final recommendations = workouts.take(2).toList();
     
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: recommendations.map((workout) {
-        return WorkoutCard(
-          title: workout.title,
-          duration: workout.duration,
-          level: workout.level,
-          image: workout.image,
-          onTap: () {
-            Navigator.push(
-              context,
-              SlideUpPageRoute(page: WorkoutDetailScreen(workout: workout)),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Calculate card width based on available space
+        final cardWidth = (constraints.maxWidth - 20) / 2; // 2 cards with spacing
+        final cardHeight = cardWidth * 1.5; // 1.5:1 aspect ratio
+        
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: recommendations.asMap().entries.map((entry) {
+            final workout = entry.value;
+            return WorkoutCard(
+              title: workout.title,
+              duration: workout.duration,
+              level: workout.level,
+              image: workout.image,
+              width: cardWidth,
+              height: cardHeight,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  SlideUpPageRoute(page: WorkoutDetailScreen(workout: workout)),
+                );
+              },
             );
-          },
+          }).toList(),
         );
-      }).toList(),
+      },
     );
   }
 }
 
 class WorkoutCard extends StatelessWidget {
   final String title, duration, level, image;
+  final double? width;
+  final double? height;
   final VoidCallback? onTap;
 
   const WorkoutCard({
@@ -231,6 +297,8 @@ class WorkoutCard extends StatelessWidget {
     required this.duration,
     required this.level,
     required this.image,
+    this.width,
+    this.height,
     this.onTap,
   });
 
@@ -242,9 +310,10 @@ class WorkoutCard extends StatelessWidget {
         color: const Color(0xFF4A3D7E),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         clipBehavior: Clip.antiAlias,
+        elevation: 4,
         child: SizedBox(
-          width: 150,
-          height: 200,
+          width: width ?? 150,
+          height: height ?? 220,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import '../models/models.dart';
 import '../models/goals_model.dart';
 import '../models/workout_history_model.dart';
@@ -37,7 +38,7 @@ class FirestoreService {
       }, SetOptions(merge: true));
       return true;
     } catch (e) {
-      print('Error syncing user data: $e');
+      debugPrint('Error syncing user data: $e');
       return false;
     }
   }
@@ -53,7 +54,7 @@ class FirestoreService {
       }
       return null;
     } catch (e) {
-      print('Error fetching user data: $e');
+      debugPrint('Error fetching user data: $e');
       return null;
     }
   }
@@ -84,7 +85,7 @@ class FirestoreService {
       await batch.commit();
       return true;
     } catch (e) {
-      print('Error syncing progress: $e');
+      debugPrint('Error syncing progress: $e');
       return false;
     }
   }
@@ -101,7 +102,7 @@ class FirestoreService {
       }, SetOptions(merge: true));
       return true;
     } catch (e) {
-      print('Error syncing day progress: $e');
+      debugPrint('Error syncing day progress: $e');
       return false;
     }
   }
@@ -120,7 +121,7 @@ class FirestoreService {
           .map((doc) => DailyProgressModel.fromJson(doc.data()))
           .toList();
     } catch (e) {
-      print('Error fetching progress: $e');
+      debugPrint('Error fetching progress: $e');
       return [];
     }
   }
@@ -138,7 +139,7 @@ class FirestoreService {
       }, SetOptions(merge: true));
       return true;
     } catch (e) {
-      print('Error syncing goals: $e');
+      debugPrint('Error syncing goals: $e');
       return false;
     }
   }
@@ -154,7 +155,7 @@ class FirestoreService {
       }
       return null;
     } catch (e) {
-      print('Error fetching goals: $e');
+      debugPrint('Error fetching goals: $e');
       return null;
     }
   }
@@ -177,7 +178,7 @@ class FirestoreService {
       });
       return true;
     } catch (e) {
-      print('Error adding workout to history: $e');
+      debugPrint('Error adding workout to history: $e');
       return false;
     }
   }
@@ -197,7 +198,7 @@ class FirestoreService {
       await batch.commit();
       return true;
     } catch (e) {
-      print('Error syncing workout history: $e');
+      debugPrint('Error syncing workout history: $e');
       return false;
     }
   }
@@ -216,7 +217,7 @@ class FirestoreService {
           .map((doc) => WorkoutHistoryEntry.fromJson(doc.data()))
           .toList();
     } catch (e) {
-      print('Error fetching workout history: $e');
+      debugPrint('Error fetching workout history: $e');
       return [];
     }
   }
@@ -236,7 +237,7 @@ class FirestoreService {
       await batch.commit();
       return true;
     } catch (e) {
-      print('Error clearing workout history: $e');
+      debugPrint('Error clearing workout history: $e');
       return false;
     }
   }
@@ -265,7 +266,7 @@ class FirestoreService {
         'workoutHistory': results[3],
       };
     } catch (e) {
-      print('Error during full sync: $e');
+      debugPrint('Error during full sync: $e');
       return {'success': false, 'error': e.toString()};
     }
   }

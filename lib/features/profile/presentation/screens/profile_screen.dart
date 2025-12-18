@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:momentum/core/state/app_state.dart';
 import 'package:momentum/core/widgets/profile_picture_widget.dart';
+import 'package:momentum/core/widgets/animated_list_item.dart';
 import 'package:momentum/core/utils/page_transitions.dart';
 import 'package:momentum/features/profile/presentation/screens/edit_profile_screen.dart';
 import 'package:momentum/features/profile/presentation/screens/settings_screen.dart';
@@ -40,46 +41,64 @@ class ProfileScreen extends StatelessWidget {
           padding: const EdgeInsets.all(24.0),
           child: Column(
             children: [
-              ProfilePictureWidget(
-                imagePath: localUser?.profileImagePath,
-                name: userName.isNotEmpty ? userName : 'Guest',
-                size: 120,
-                showEditButton: false,
-                borderWidth: 3,
-                borderColor: const Color(0xFFE8FF78),
+              AnimatedScaleIn(
+                delay: const Duration(milliseconds: 100),
+                child: ProfilePictureWidget(
+                  imagePath: localUser?.profileImagePath,
+                  name: userName.isNotEmpty ? userName : 'Guest',
+                  size: 120,
+                  showEditButton: false,
+                  borderWidth: 3,
+                  borderColor: const Color(0xFFE8FF78),
+                ),
               ),
               const SizedBox(height: 20),
-              Text(
-                userName.isNotEmpty ? userName : 'Guest User',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
+              AnimatedFadeIn(
+                delay: const Duration(milliseconds: 200),
+                child: Text(
+                  userName.isNotEmpty ? userName : 'Guest User',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
               const SizedBox(height: 8),
-              Text(
-                userEmail.isNotEmpty ? userEmail : 'guest@momentum.app',
-                style: const TextStyle(color: Colors.white54, fontSize: 16),
+              AnimatedFadeIn(
+                delay: const Duration(milliseconds: 250),
+                child: Text(
+                  userEmail.isNotEmpty ? userEmail : 'guest@momentum.app',
+                  style: const TextStyle(color: Colors.white54, fontSize: 16),
+                ),
               ),
               const SizedBox(height: 30),
-              _buildProfileDetailCard(
-                title: 'Weight',
-                value: localUser?.weight != null 
-                    ? '${localUser!.weight!.toStringAsFixed(0)} ${localUser.useMetricUnits ? 'kg' : 'lbs'}' 
-                    : 'Not set',
+              AnimatedListItem(
+                index: 0,
+                child: _buildProfileDetailCard(
+                  title: 'Weight',
+                  value: localUser?.weight != null 
+                      ? '${localUser!.weight!.toStringAsFixed(0)} ${localUser.useMetricUnits ? 'kg' : 'lbs'}' 
+                      : 'Not set',
+                ),
               ),
               const SizedBox(height: 16),
-              _buildProfileDetailCard(
-                title: 'Height',
-                value: localUser?.height != null 
-                    ? _formatHeight(localUser!.height!, localUser.useMetricUnits) 
-                    : 'Not set',
+              AnimatedListItem(
+                index: 1,
+                child: _buildProfileDetailCard(
+                  title: 'Height',
+                  value: localUser?.height != null 
+                      ? _formatHeight(localUser!.height!, localUser.useMetricUnits) 
+                      : 'Not set',
+                ),
               ),
               const SizedBox(height: 16),
-              _buildProfileDetailCard(
-                title: 'Age',
-                value: localUser?.age != null ? '${localUser!.age}' : 'Not set',
+              AnimatedListItem(
+                index: 2,
+                child: _buildProfileDetailCard(
+                  title: 'Age',
+                  value: localUser?.age != null ? '${localUser!.age}' : 'Not set',
+                ),
               ),
               const SizedBox(height: 40),
               SizedBox(

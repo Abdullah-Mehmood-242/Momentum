@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class HelpCenterScreen extends StatefulWidget {
   const HelpCenterScreen({super.key});
@@ -126,32 +127,10 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
           // Quick Actions
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: _buildQuickAction(
-                    icon: Icons.email_outlined,
-                    label: 'Email Support',
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Email: support@momentum-app.com')),
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildQuickAction(
-                    icon: Icons.chat_outlined,
-                    label: 'Live Chat',
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Live chat available Mon-Fri, 9AM-5PM')),
-                      );
-                    },
-                  ),
-                ),
-              ],
+            child: _buildQuickAction(
+              icon: Icons.email_outlined,
+              label: 'Email Support',
+              onTap: () => _launchEmail(null),
             ),
           ),
           const SizedBox(height: 16),
@@ -221,12 +200,19 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
                         borderRadius: BorderRadius.circular(30),
                       ),
                     ),
-                    child: const Text(
-                      'Contact Support',
-                      style: TextStyle(
-                        color: Color(0xFF201A3F),
-                        fontWeight: FontWeight.bold,
-                      ),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.email, color: Color(0xFF201A3F)),
+                        SizedBox(width: 8),
+                        Text(
+                          'Contact Support',
+                          style: TextStyle(
+                            color: Color(0xFF201A3F),
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -305,13 +291,12 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
+                  final subject = subjectController.text.isNotEmpty 
+                      ? subjectController.text 
+                      : 'Momentum App Support';
+                  final body = messageController.text;
                   Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Message sent! We\'ll get back to you soon.'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
+                  _launchEmailWithBody(subject, body);
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFE8FF78),
@@ -334,6 +319,53 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _launchEmailWithBody(String subject, String body) async {
+    final Uri emailUri = Uri(
+      scheme: 'mailto',
+      path: 'abdullahmehmood.tech@gmail.com',
+      queryParameters: {
+        'subject': subject,
+        'body': body,
+      },
+    );
+    
+    if (await canLaunchUrl(emailUri)) {
+      await launchUrl(emailUri);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Email: abdullahmehmood.tech@gmail.com'),
+            duration: Duration(seconds: 5),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _launchEmail(String? subject) async {
+    final Uri emailUri = Uri(
+      scheme: 'mailto',
+      path: 'abdullahmehmood.tech@gmail.com',
+      queryParameters: {
+        'subject': subject ?? 'Momentum App Support',
+      },
+    );
+    
+    if (await canLaunchUrl(emailUri)) {
+      await launchUrl(emailUri);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Email: abdullahmehmood.tech@gmail.com'),
+            duration: Duration(seconds: 5),
+          ),
+        );
+      }
+    }
   }
 
   Widget _buildQuickAction({

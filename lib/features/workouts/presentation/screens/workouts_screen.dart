@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:momentum/core/state/app_state.dart';
 import 'package:momentum/core/models/models.dart';
 import 'package:momentum/core/utils/page_transitions.dart';
+import 'package:momentum/core/widgets/animated_list_item.dart';
 import 'package:momentum/features/workouts/presentation/screens/workout_detail_screen.dart';
 import 'package:momentum/features/workouts/presentation/screens/workout_history_screen.dart';
 import 'package:momentum/features/profile/presentation/screens/settings_screen.dart';
@@ -58,7 +59,10 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
         child: Column(
           children: [
             const SizedBox(height: 20),
-            _buildSearchBar(),
+            AnimatedFadeIn(
+              delay: const Duration(milliseconds: 100),
+              child: _buildSearchBar(),
+            ),
             const SizedBox(height: 20),
             Expanded(
               child: filteredWorkouts.isEmpty
@@ -73,14 +77,18 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
                       separatorBuilder: (context, index) => const SizedBox(height: 16),
                       itemBuilder: (context, index) {
                         final workout = filteredWorkouts[index];
-                        return WorkoutCard(
-                          workout: workout,
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              SlideUpPageRoute(page: WorkoutDetailScreen(workout: workout)),
-                            );
-                          },
+                        return AnimatedListItem(
+                          index: index,
+                          delay: const Duration(milliseconds: 80),
+                          child: WorkoutCard(
+                            workout: workout,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                SlideUpPageRoute(page: WorkoutDetailScreen(workout: workout)),
+                              );
+                            },
+                          ),
                         );
                       },
                     ),
@@ -158,7 +166,7 @@ class WorkoutCard extends StatelessWidget {
                   end: Alignment.bottomCenter,
                   colors: [
                     Colors.transparent,
-                    Colors.black.withOpacity(0.7),
+                    Colors.black.withAlpha(179), // 0.7 * 255 = 179
                   ],
                 ),
               ),

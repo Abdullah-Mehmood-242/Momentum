@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:momentum/core/state/app_state.dart';
 import 'package:momentum/core/utils/page_transitions.dart';
 import 'package:momentum/features/profile/presentation/screens/edit_profile_screen.dart';
@@ -292,11 +293,45 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const Spacer(),
           Switch(
             value: enabled,
-            onChanged: (bool value) {
-              appState.setNotificationsEnabled(value);
+            onChanged: (bool value) async {
+              if (value) {
+                // Request notification permission
+                final status = await Permission.notification.request();
+                if (status.isGranted) {
+                  appState.setNotificationsEnabled(true);
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Notifications enabled!'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
+                } else if (status.isPermanentlyDenied) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Please enable notifications in device settings'),
+                      ),
+                    );
+                    openAppSettings();
+                  }
+                } else {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Notification permission denied'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
+              } else {
+                appState.setNotificationsEnabled(false);
+              }
               setState(() {});
             },
-            activeColor: Colors.white,
+            thumbColor: WidgetStateProperty.all(Colors.white),
             activeTrackColor: Colors.green,
             inactiveThumbColor: Colors.white,
             inactiveTrackColor: Colors.grey,
@@ -310,65 +345,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
-        return Dialog(
+        return AlertDialog(
           backgroundColor: const Color(0xFF4A3D7E),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.0)),
-          child: Container(
-            padding: const EdgeInsets.all(30.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  'Are You Sure?',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 30),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    ElevatedButton(
-                      onPressed: () async {
-                        await appState.logout();
-                        if (dialogContext.mounted) {
-                          Navigator.pushAndRemoveUntil(
-                            dialogContext,
-                            FadePageRoute(page: const WelcomeScreen()),
-                            (Route<dynamic> route) => false,
-                          );
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30.0),
-                        ),
-                        padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
-                      ),
-                      child: const Text(
-                        'Yes',
-                        style: TextStyle(
-                          color: Color(0xFF201A3F),
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.of(dialogContext).pop(),
-                      child: const Text(
-                        'No',
-                        style: TextStyle(color: Colors.white, fontSize: 18),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Text(
+            'Logout',
+            style: TextStyle(color: Colors.white),
           ),
+          content: const Text(
+            'Are you sure you want to logout?',
+            style: TextStyle(color: Colors.white70),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancel', style: TextStyle(color: Colors.white)),
+            ),
+            TextButton(
+              onPressed: () async {
+                await appState.logout();
+                if (dialogContext.mounted) {
+                  Navigator.pushAndRemoveUntil(
+                    dialogContext,
+                    FadePageRoute(page: const WelcomeScreen()),
+                    (Route<dynamic> route) => false,
+                  );
+                }
+              },
+              child: const Text('Logout', style: TextStyle(color: Colors.red)),
+            ),
+          ],
         );
       },
     );

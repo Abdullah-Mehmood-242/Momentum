@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:local_auth/local_auth.dart';
 import 'package:momentum/core/state/app_state.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SecurityScreen extends StatefulWidget {
   const SecurityScreen({super.key});
@@ -13,11 +16,74 @@ class _SecurityScreenState extends State<SecurityScreen> {
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+  final LocalAuthentication _localAuth = LocalAuthentication();
   bool _obscureCurrent = true;
   bool _obscureNew = true;
   bool _obscureConfirm = true;
   bool _isLoading = false;
   bool _biometricEnabled = false;
+  bool _biometricAvailable = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBiometricSettings();
+  }
+
+  Future<void> _loadBiometricSettings() async {
+    // Check if biometric is available
+    _biometricAvailable = await _localAuth.canCheckBiometrics ||
+        await _localAuth.isDeviceSupported();
+    
+    // Load saved preference
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _biometricEnabled = prefs.getBool('biometric_enabled') ?? false;
+    });
+  }
+
+  Future<void> _toggleBiometric(bool value) async {
+    if (value) {
+      // Try to authenticate first
+      try {
+        final authenticated = await _localAuth.authenticate(
+          localizedReason: 'Enable biometric login for Momentum',
+        );
+        
+        if (authenticated) {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setBool('biometric_enabled', true);
+          setState(() => _biometricEnabled = true);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Biometric login enabled!'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Biometric authentication failed: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } else {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('biometric_enabled', false);
+      setState(() => _biometricEnabled = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Biometric login disabled')),
+        );
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -30,26 +96,66 @@ class _SecurityScreenState extends State<SecurityScreen> {
   Future<void> _handleChangePassword() async {
     if (!_formKey.currentState!.validate()) return;
 
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || user.email == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('You must be logged in to change password'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
 
-    // Firebase requires re-authentication before password change
-    // For now, we'll show a success message
-    await Future.delayed(const Duration(seconds: 1));
+    try {
+      // Re-authenticate user first
+      final credential = EmailAuthProvider.credential(
+        email: user.email!,
+        password: _currentPasswordController.text,
+      );
+      
+      await user.reauthenticateWithCredential(credential);
+      
+      // Now update password
+      await user.updatePassword(_newPasswordController.text);
+      
+      if (!mounted) return;
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Password changed successfully!'),
+          backgroundColor: Colors.green,
+        ),
+      );
 
-    setState(() => _isLoading = false);
-
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Password changed successfully!'),
-        backgroundColor: Colors.green,
-      ),
-    );
-
-    _currentPasswordController.clear();
-    _newPasswordController.clear();
-    _confirmPasswordController.clear();
+      _currentPasswordController.clear();
+      _newPasswordController.clear();
+      _confirmPasswordController.clear();
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      String message = 'Failed to change password';
+      if (e.code == 'wrong-password') {
+        message = 'Current password is incorrect';
+      } else if (e.code == 'weak-password') {
+        message = 'New password is too weak';
+      } else if (e.code == 'requires-recent-login') {
+        message = 'Please log out and log in again, then try changing password';
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message), backgroundColor: Colors.red),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   Future<void> _handleDeleteAccount() async {
@@ -81,14 +187,18 @@ class _SecurityScreenState extends State<SecurityScreen> {
 
     if (confirmed == true && mounted) {
       final appState = AppStateProvider.of(context);
+      final navigator = Navigator.of(context);
+      final scaffoldMessenger = ScaffoldMessenger.of(context);
+      
       final result = await appState.authService.deleteAccount();
       
       if (result.success) {
         await appState.logout();
         if (!mounted) return;
-        Navigator.of(context).popUntil((route) => route.isFirst);
+        navigator.popUntil((route) => route.isFirst);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
+        if (!mounted) return;
+        scaffoldMessenger.showSnackBar(
           SnackBar(
             content: Text(result.message ?? 'Failed to delete account'),
             backgroundColor: Colors.red,
@@ -217,20 +327,19 @@ class _SecurityScreenState extends State<SecurityScreen> {
               _buildSecurityOption(
                 icon: Icons.fingerprint,
                 title: 'Biometric Login',
-                subtitle: 'Use fingerprint or face to login',
+                subtitle: _biometricAvailable 
+                    ? 'Use fingerprint or face to login'
+                    : 'Not available on this device',
                 trailing: Switch(
                   value: _biometricEnabled,
-                  onChanged: (value) {
-                    setState(() => _biometricEnabled = value);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(value 
-                            ? 'Biometric login enabled' 
-                            : 'Biometric login disabled'),
-                      ),
-                    );
-                  },
-                  activeColor: const Color(0xFFE8FF78),
+                  onChanged: _biometricAvailable ? _toggleBiometric : null,
+                  activeTrackColor: const Color(0xFFE8FF78).withAlpha(128),
+                  thumbColor: WidgetStateProperty.resolveWith((states) {
+                    if (states.contains(WidgetState.selected)) {
+                      return const Color(0xFFE8FF78);
+                    }
+                    return Colors.grey;
+                  }),
                 ),
               ),
               const SizedBox(height: 16),

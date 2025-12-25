@@ -192,6 +192,16 @@ class StorageService {
     return await _prefs.setBool(_notificationsEnabledKey, enabled);
   }
 
+  /// Get biometric enabled setting
+  bool getBiometricEnabled() {
+    return _prefs.getBool(_biometricEnabledKey) ?? false;
+  }
+
+  /// Set biometric enabled setting
+  Future<bool> setBiometricEnabled(bool enabled) async {
+    return await _prefs.setBool(_biometricEnabledKey, enabled);
+  }
+
   // ==================== Onboarding ====================
 
   static const String _hasSeenOnboardingKey = 'has_seen_onboarding';

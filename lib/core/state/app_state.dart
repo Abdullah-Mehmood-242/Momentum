@@ -348,6 +348,18 @@ class AppState extends ChangeNotifier {
         .toList();
   }
 
+  /// Add a custom workout
+  Future<void> addCustomWorkout(WorkoutModel workout) async {
+    _workouts.add(workout);
+    notifyListeners();
+  }
+
+  /// Remove a custom workout
+  Future<void> removeCustomWorkout(String workoutId) async {
+    _workouts.removeWhere((w) => w.id == workoutId);
+    notifyListeners();
+  }
+
   /// Complete a workout and update progress
   Future<void> completeWorkout(WorkoutModel workout, int durationMinutes) async {
     final today = DateTime.now();

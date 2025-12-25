@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:local_auth/local_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:momentum/core/state/app_state.dart';
 import 'package:momentum/core/utils/page_transitions.dart';
 import 'package:momentum/features/auth/presentation/screens/register_screen.dart';
 import 'package:momentum/features/auth/presentation/screens/forgot_password_screen.dart';
+import 'package:momentum/features/auth/presentation/screens/email_verification_screen.dart';
 import 'package:momentum/features/home/presentation/screens/dashboard_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -16,8 +19,101 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+  final LocalAuthentication _localAuth = LocalAuthentication();
   bool _obscurePassword = true;
   bool _isLoading = false;
+  bool _biometricEnabled = false;
+  bool _biometricAvailable = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkBiometricSettings();
+  }
+
+  Future<void> _checkBiometricSettings() async {
+    _biometricAvailable = await _localAuth.canCheckBiometrics ||
+        await _localAuth.isDeviceSupported();
+    
+    final prefs = await SharedPreferences.getInstance();
+    _biometricEnabled = prefs.getBool('biometric_enabled') ?? false;
+    
+    // Also get saved email for biometric login
+    if (_biometricEnabled) {
+      _emailController.text = prefs.getString('biometric_email') ?? '';
+    }
+    
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _handleBiometricLogin() async {
+    try {
+      final authenticated = await _localAuth.authenticate(
+        localizedReason: 'Login to Momentum with biometrics',
+      );
+      
+      if (authenticated && mounted) {
+        final prefs = await SharedPreferences.getInstance();
+        final savedEmail = prefs.getString('biometric_email');
+        final savedPassword = prefs.getString('biometric_password');
+        
+        if (savedEmail != null && savedPassword != null) {
+          setState(() => _isLoading = true);
+          
+          final appState = AppStateProvider.of(context);
+          final result = await appState.login(
+            email: savedEmail,
+            password: savedPassword,
+          );
+          
+          setState(() => _isLoading = false);
+          
+          if (!mounted) return;
+          
+          if (result.success) {
+            if (appState.authService.isEmailVerified) {
+              Navigator.pushAndRemoveUntil(
+                context,
+                FadePageRoute(page: const DashboardScreen()),
+                (Route<dynamic> route) => false,
+              );
+            } else {
+              Navigator.pushAndRemoveUntil(
+                context,
+                FadePageRoute(page: EmailVerificationScreen(email: savedEmail)),
+                (Route<dynamic> route) => false,
+              );
+            }
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(result.message ?? 'Login failed. Please try again.'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('No saved credentials. Please login with email first.'),
+                backgroundColor: Colors.orange,
+              ),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Biometric authentication failed: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -42,11 +138,28 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!mounted) return;
 
     if (result.success) {
-      Navigator.pushAndRemoveUntil(
-        context,
-        FadePageRoute(page: const DashboardScreen()),
-        (Route<dynamic> route) => false,
-      );
+      // Save credentials for biometric login if enabled
+      final prefs = await SharedPreferences.getInstance();
+      if (prefs.getBool('biometric_enabled') ?? false) {
+        await prefs.setString('biometric_email', _emailController.text.trim());
+        await prefs.setString('biometric_password', _passwordController.text);
+      }
+      
+      // Check if email is verified
+      if (appState.authService.isEmailVerified) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          FadePageRoute(page: const DashboardScreen()),
+          (Route<dynamic> route) => false,
+        );
+      } else {
+        // Email not verified, redirect to verification screen
+        Navigator.pushAndRemoveUntil(
+          context,
+          FadePageRoute(page: EmailVerificationScreen(email: _emailController.text.trim())),
+          (Route<dynamic> route) => false,
+        );
+      }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -188,6 +301,32 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                 ),
               ),
+              // Biometric login button
+              if (_biometricEnabled && _biometricAvailable) ...[
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: OutlinedButton.icon(
+                    onPressed: _isLoading ? null : _handleBiometricLogin,
+                    icon: const Icon(Icons.fingerprint, color: Colors.white),
+                    label: const Text(
+                      'Login with Biometrics',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Colors.white),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30.0),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
               const Spacer(),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,

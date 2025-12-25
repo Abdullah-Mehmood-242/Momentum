@@ -5,6 +5,7 @@ import 'package:momentum/core/utils/page_transitions.dart';
 import 'package:momentum/core/widgets/animated_list_item.dart';
 import 'package:momentum/features/workouts/presentation/screens/workout_detail_screen.dart';
 import 'package:momentum/features/workouts/presentation/screens/workout_history_screen.dart';
+import 'package:momentum/features/workouts/presentation/screens/create_workout_screen.dart';
 import 'package:momentum/features/profile/presentation/screens/settings_screen.dart';
 
 class WorkoutsScreen extends StatefulWidget {
@@ -28,7 +29,7 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFF201A3F),
       appBar: AppBar(
-        backgroundColor: Colors.grey[800],
+        backgroundColor: const Color(0xFF201A3F),
         elevation: 0,
         automaticallyImplyLeading: false,
         title: const Text('Workout', style: TextStyle(color: Colors.white)),
@@ -53,6 +54,23 @@ class _WorkoutsScreenState extends State<WorkoutsScreen> {
             },
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          Navigator.push(
+            context,
+            SlideUpPageRoute(page: const CreateWorkoutScreen()),
+          );
+        },
+        backgroundColor: const Color(0xFFE8FF78),
+        icon: const Icon(Icons.add, color: Color(0xFF201A3F)),
+        label: const Text(
+          'Create Workout',
+          style: TextStyle(
+            color: Color(0xFF201A3F),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24.0),

@@ -10,8 +10,41 @@ class AuthService {
   /// Check if user is logged in
   bool get isLoggedIn => currentUser != null;
 
+  /// Check if email is verified
+  bool get isEmailVerified => currentUser?.emailVerified ?? false;
+
   /// Stream of auth state changes
   Stream<User?> get authStateChanges => _auth.authStateChanges();
+
+  /// Send email verification to current user
+  Future<AuthResult> sendEmailVerification() async {
+    try {
+      if (currentUser == null) {
+        return AuthResult.failure(message: 'No user logged in');
+      }
+      await currentUser!.sendEmailVerification();
+      return AuthResult.success(message: 'Verification email sent');
+    } on FirebaseAuthException catch (e) {
+      return AuthResult.failure(message: _getErrorMessage(e.code));
+    } on FirebaseException catch (e) {
+      return AuthResult.failure(message: _getErrorMessage(e.code));
+    } catch (e) {
+      return AuthResult.failure(message: 'Error: ${e.runtimeType} - $e');
+    }
+  }
+
+  /// Reload current user data from Firebase
+  Future<AuthResult> reloadUser() async {
+    try {
+      if (currentUser == null) {
+        return AuthResult.failure(message: 'No user logged in');
+      }
+      await currentUser!.reload();
+      return AuthResult.success(user: _auth.currentUser);
+    } catch (e) {
+      return AuthResult.failure(message: 'Error: ${e.runtimeType} - $e');
+    }
+  }
 
   /// Register with email and password
   Future<AuthResult> register({

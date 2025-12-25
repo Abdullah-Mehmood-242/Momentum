@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:momentum/core/state/app_state.dart';
 import 'package:momentum/core/utils/page_transitions.dart';
 import 'package:momentum/features/auth/presentation/screens/login_screen.dart';
-import 'package:momentum/features/home/presentation/screens/dashboard_screen.dart';
+import 'package:momentum/features/auth/presentation/screens/email_verification_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -42,17 +42,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
       password: _passwordController.text,
     );
 
-    setState(() => _isLoading = false);
-
     if (!mounted) return;
 
     if (result.success) {
+      // Send verification email
+      await appState.authService.sendEmailVerification();
+      
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      
+      // Navigate to email verification screen
       Navigator.pushAndRemoveUntil(
         context,
-        FadePageRoute(page: const DashboardScreen()),
+        FadePageRoute(page: EmailVerificationScreen(email: _emailController.text.trim())),
         (Route<dynamic> route) => false,
       );
     } else {
+      setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(result.message ?? 'Registration failed. Please try again.'),

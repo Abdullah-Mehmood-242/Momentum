@@ -25,7 +25,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFF201A3F),
       appBar: AppBar(
-        backgroundColor: Colors.grey[800],
+        backgroundColor: const Color(0xFF201A3F),
         elevation: 0,
         automaticallyImplyLeading: false,
         title: const Text('Progress', style: TextStyle(color: Colors.white)),

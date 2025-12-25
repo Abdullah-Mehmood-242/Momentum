@@ -44,7 +44,58 @@ class _SecurityScreenState extends State<SecurityScreen> {
 
   Future<void> _toggleBiometric(bool value) async {
     if (value) {
-      // Try to authenticate first
+      // Show dialog to get current password
+      final passwordController = TextEditingController();
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: const Color(0xFF4A3D7E),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Text(
+            'Enable Biometric Login',
+            style: TextStyle(color: Colors.white),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Enter your password to enable biometric login:',
+                style: TextStyle(color: Colors.white70),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: passwordController,
+                obscureText: true,
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: 'Password',
+                  hintStyle: const TextStyle(color: Colors.white54),
+                  filled: true,
+                  fillColor: const Color(0xFF201A3F),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel', style: TextStyle(color: Colors.white)),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Enable', style: TextStyle(color: Color(0xFFE8FF78))),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmed != true || passwordController.text.isEmpty) return;
+
+      // Try to authenticate with biometrics
       try {
         final authenticated = await _localAuth.authenticate(
           localizedReason: 'Enable biometric login for Momentum',
@@ -53,11 +104,15 @@ class _SecurityScreenState extends State<SecurityScreen> {
         if (authenticated) {
           final prefs = await SharedPreferences.getInstance();
           await prefs.setBool('biometric_enabled', true);
+          // Save credentials for biometric login
+          final appState = AppStateProvider.of(context);
+          await prefs.setString('biometric_email', appState.userEmail);
+          await prefs.setString('biometric_password', passwordController.text);
           setState(() => _biometricEnabled = true);
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('Biometric login enabled!'),
+                content: Text('Biometric login enabled! You can now login with biometrics.'),
                 backgroundColor: Colors.green,
               ),
             );
@@ -76,6 +131,9 @@ class _SecurityScreenState extends State<SecurityScreen> {
     } else {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('biometric_enabled', false);
+      // Clear saved credentials
+      await prefs.remove('biometric_email');
+      await prefs.remove('biometric_password');
       setState(() => _biometricEnabled = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -213,7 +271,7 @@ class _SecurityScreenState extends State<SecurityScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFF201A3F),
       appBar: AppBar(
-        backgroundColor: Colors.grey[800],
+        backgroundColor: const Color(0xFF201A3F),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
